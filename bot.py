@@ -520,6 +520,19 @@ async def characters_js():
     return FileResponse(BASE / "webapp" / "characters.js", media_type="application/javascript")
 
 
+APP_VERSION = "2026-11-07.5"
+
+
+@app.get("/version")
+async def version():
+    """Zeigt, welche Code-Version auf dem Server läuft (zur Kontrolle nach einem Deploy)."""
+    return {"version": APP_VERSION,
+            "commit": os.environ.get("RAILWAY_GIT_COMMIT_SHA", "")[:7] or "unbekannt",
+            "commit_message": os.environ.get("RAILWAY_GIT_COMMIT_MESSAGE", "")[:80],
+            "promo": (BASE / "webapp" / "promo").is_dir(),
+            "ads": ad_providers() or "keine"}
+
+
 PROMO_TYPES = {".jpg": "image/jpeg", ".pdf": "application/pdf"}
 
 
@@ -1238,7 +1251,8 @@ def check_config() -> None:
         problems.append("DEV_MODE ist an – Diamanten auch ohne Werbung! Nur zum Testen")
     for p in problems:
         log.warning("⚠️  %s", p)
-    log.info("Start: Auszahlung=%s (%s), Shop=%s, Werbung=%s", PAYOUT_MODE, PAYOUT_ASSET,
+    log.info("Start: Version %s (Commit %s), Auszahlung=%s (%s), Shop=%s, Werbung=%s", APP_VERSION,
+             os.environ.get("RAILWAY_GIT_COMMIT_SHA", "")[:7] or "?", PAYOUT_MODE, PAYOUT_ASSET,
              "an" if SHOP_ENABLED else "aus", ad_providers() or "keine")
 
 

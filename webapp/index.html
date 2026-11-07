@@ -354,7 +354,7 @@ const REGULAR = CHARS.filter(c=>!JP[c.id]).map(c=>c.id);
 const daily = (id,l)=>{ if(JP[id]) return Math.round(JP[id].usd*(1+0.05*(l-1))*1e6)/1e6; const [lo,hi]=EDITION_USD[BY[id].edition]; return Math.round((lo+(hi-lo)*((BY[id].no-1)%20)/19)*(1+0.05*(l-1))*1e6)/1e6; };
 const lvCost = (id,l)=> Math.ceil((2+0.15*l)*COST_F[BY[id].edition]);
 const adReward = n=> AD_D;
-const APP_VERSION = "2026-11-07.4";
+const APP_VERSION = "2026-11-07.5";
 
 /* ================================================================ Verbindung */
 const tg = window.Telegram && window.Telegram.WebApp;
