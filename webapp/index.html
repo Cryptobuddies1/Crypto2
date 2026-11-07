@@ -354,6 +354,7 @@ const REGULAR = CHARS.filter(c=>!JP[c.id]).map(c=>c.id);
 const daily = (id,l)=>{ if(JP[id]) return Math.round(JP[id].usd*(1+0.05*(l-1))*1e6)/1e6; const [lo,hi]=EDITION_USD[BY[id].edition]; return Math.round((lo+(hi-lo)*((BY[id].no-1)%20)/19)*(1+0.05*(l-1))*1e6)/1e6; };
 const lvCost = (id,l)=> Math.ceil((2+0.15*l)*COST_F[BY[id].edition]);
 const adReward = n=> AD_D;
+const APP_VERSION = "2026-11-07.4";
 
 /* ================================================================ Verbindung */
 const tg = window.Telegram && window.Telegram.WebApp;
@@ -491,7 +492,8 @@ const VIEWS = {
     const wait = Math.max(0, S.next_ad_at - now());
     const done = Math.min(S.streak,7), nextDay = S.daily_available ? Math.min(S.streak+1,7) : 0;
     const link = S.ref_link || "";
-    let html = `<h2>${T("diamonds")}</h2><p class="sub">${T("you_have")} <b class="num">💎 ${fmt(S.diamonds)}</b></p>
+    let html = `<button class="promo-btn" data-promo style="margin:4px 0 14px"><span class="pi">📣</span><span class="pt"><b>${T("promo")}</b><small>${T("promo_banners")} · ${T("promo_wp")}</small></span><span class="pa">›</span></button>
+      <h2>${T("diamonds")}</h2><p class="sub">${T("you_have")} <b class="num">💎 ${fmt(S.diamonds)}</b></p>
       <div class="card reward"><div class="ic">▶</div><div class="tx"><b>${T("watch_video")}</b><span>+${S.next_ad_reward} 💎 · ${T("watched_today",{n:S.ads_today})}</span></div>
         <button class="btn" id="adBtn" data-ad ${wait>0?"disabled":""}>${wait>0?`<span class="num" id="adWait">${Math.ceil(wait)} s</span>`:T("watch")}</button></div>
       <div class="card"><div class="reward"><div class="ic">📅</div><div class="tx"><b>${T("daily_bonus")}</b><span>${T("daily_sub")}</span></div>
@@ -503,7 +505,7 @@ const VIEWS = {
                : `<p class="sub" style="margin:10px 0 0">${T("ref_wait")}</p>`}
         <div class="kv" style="margin-top:10px"><span>${T("invited")}</span><b class="num">${S.friends}</b></div>
         <div class="kv"><span>${T("ref_earned")}</span><b class="num">${money(S.ref_earned)}</b></div>
-        <button class="promo-btn" data-promo><span class="pi">📣</span><span class="pt"><b>${T("promo")}</b><small>${T("promo_banners")} · ${T("promo_wp")}</small></span><span class="pa">›</span></button></div>`;
+</div>`;
     if(S.shop_enabled) html += shopSection();
     return html;
   },
@@ -555,7 +557,7 @@ const VIEWS = {
         <ol class="steps"><li>${T("step1")}</li><li>${T("step2",{n:money(S.min_payout), a:S.payout_asset||"TRX"})}</li></ol>
         <p style="color:var(--muted);font-size:12px;margin:10px 0 0">${T("wallet_note",{n:S.min_ads_24h})}</p></div>
       ${S.payouts.length?`<h2>${T("payouts")}</h2><div class="card">${S.payouts.map(x=>`<div class="kv"><span>${new Date(x.created*1000).toLocaleString(LOC(),{dateStyle:"short",timeStyle:"short"})}</span><b class="num">${money(x.amount)}${x.asset_amount?` · ${usd(x.asset_amount)} ${x.asset}`:""} · ${status[x.status]||x.status}</b></div>`).join("")}</div>`:""}
-      <h2>${T("leaderboard")}</h2><div class="card">${S.top.map((x,i)=>`<div class="lb"><span class="rk">${i+1}</span><span class="n">${esc(x.name)}</span><span class="num" style="color:var(--muted)">${money(x.score)}</span></div>`).join("")}</div>`;
+      <h2>${T("leaderboard")}</h2><div class="card">${S.top.map((x,i)=>`<div class="lb"><span class="rk">${i+1}</span><span class="n">${esc(x.name)}</span><span class="num" style="color:var(--muted)">${money(x.score)}</span></div>`).join("")}</div><p style="text-align:center;color:var(--faint,#9aa3af);font-size:11px;margin:18px 0 0">Version ${APP_VERSION}</p>`;
   },
 };
 
