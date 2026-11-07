@@ -499,9 +499,12 @@ async def lifespan(_app):
 app = FastAPI(lifespan=lifespan)
 
 
+NO_CACHE = {"Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache", "Expires": "0"}
+
+
 @app.get("/")
 async def index():
-    return FileResponse(BASE / "webapp" / "index.html")
+    return FileResponse(BASE / "webapp" / "index.html", headers=NO_CACHE)
 
 
 @app.get("/logo.png")
@@ -645,7 +648,7 @@ async def handle(action, user_id, tg_user, start_param, body):
 # ================================================================ Admin-Panel
 @app.get("/admin")
 async def admin_page():
-    return FileResponse(BASE / "webapp" / "admin.html")
+    return FileResponse(BASE / "webapp" / "admin.html", headers=NO_CACHE)
 
 
 async def broadcast(texts: dict, button: bool = True) -> dict:
