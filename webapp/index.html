@@ -369,18 +369,22 @@ async function server(action, body={}){
 const call = (a,b)=> server(a,b);
 
 /* ================================================================ Werbung */
-// 1. AdsGram (Reward-Block)  2. Monetag als Ersatz, wenn AdsGram nichts zeigen kann  3. Demo
+// 1. AdsGram (Reward-Block)  2. RichAds (Video)  3. Monetag – der nächste springt ein, wenn der vorige nichts zeigen kann
 const waitFor = (fn, ms=4000)=> new Promise(res=>{ const t0=Date.now(); (function poll(){ const v=fn(); if(v || Date.now()-t0>ms) return res(v); setTimeout(poll,150); })(); });
 const okAg = (id, intPrefix)=> !!id && (intPrefix ? /^int-\d+$/ : /^\d+$/).test(String(id).trim());
 async function showRewardedAd(){
-  const ag = S && okAg(S.adsgram_block_id) ? String(S.adsgram_block_id).trim() : "", mt = S && S.monetag_zone;
-  if(!ag && !mt){ toast(T("no_ad")); return false; }   // kein Werbeanbieter eingetragen
+  const ag = S && okAg(S.adsgram_block_id) ? String(S.adsgram_block_id).trim() : "", mt = S && S.monetag_zone, ra = S && S.richads;
+  if(!ag && !mt && !ra){ toast(T("no_ad")); return false; }   // kein Werbeanbieter eingetragen
   if(ag){
     const A = await waitFor(()=>window.Adsgram);
     if(A){
       try{ await A.init({blockId: String(ag)}).show(); return true; }
       catch(r){ if(r && r.error === false){ toast(T("ad_cancel")); return false; } }   // selbst abgebrochen → kein Ersatz
     }
+  }
+  if(ra){
+    const R = await waitFor(()=>window.__richads, 3000);
+    if(R){ try{ await R.triggerInterstitialVideo(); return true; }catch(e){} }
   }
   if(mt){
     const show = await waitFor(()=>window["show_"+mt]);
@@ -397,6 +401,11 @@ function loadAds(){
   if(!S) return;
   if((okAg(S.adsgram_block_id) || okAg(S.adsgram_int_id, true)) && !document.getElementById("sadjs")){
     const sc=document.createElement("script"); sc.id="sadjs"; sc.src="https://sad.adsgram.ai/js/sad.min.js"; document.head.appendChild(sc);
+  }
+  if(S.richads && !document.getElementById("rajs")){
+    const sc=document.createElement("script"); sc.id="rajs"; sc.src="https://richinfo.co/richpartners/telegram/js/tg-ob.js";
+    sc.onload=()=>{ try{ const c=new window.TelegramAdsController(); c.initialize({pubId:String(S.richads.pub), appId:String(S.richads.app)}); window.__richads=c; }catch(e){} };
+    document.head.appendChild(sc);
   }
   if(S.monetag_zone && !document.getElementById("mtjs")){
     const sc=document.createElement("script"); sc.id="mtjs"; sc.src="https://libtl.com/sdk.js";

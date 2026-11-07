@@ -42,7 +42,9 @@ ADMIN_ID = min(ADMIN_IDS) if ADMIN_IDS else 0           # Haupt-Admin für Warnu
 # Werbung
 ADSGRAM_BLOCK_ID = env("ADSGRAM_BLOCK_ID", "")             # Reward-Block (nur Ziffern, z. B. 12345)
 ADSGRAM_INTERSTITIAL_ID = env("ADSGRAM_INTERSTITIAL_ID", "")   # optional: Vollbild-Werbung nach jedem 3. Pack ("int-12345")
-MONETAG_ZONE_ID = env("MONETAG_ZONE_ID", "")               # optional: Monetag als zweiter Anbieter
+MONETAG_ZONE_ID = env("MONETAG_ZONE_ID", "")               # optional: Monetag als letzter Ersatz
+RICHADS_PUB_ID = env("RICHADS_PUB_ID", "1028233")          # RichAds: zweiter Anbieter nach AdsGram (leer = aus)
+RICHADS_APP_ID = env("RICHADS_APP_ID", "9592")
 DEV_MODE = env("DEV_MODE", "false").lower() == "true"      # nur zum Testen: Diamanten ohne Werbeanbieter
 ADS_VERIFY = env("ADS_VERIFY", "false").lower() == "true"     # true = nur per AdsGram Reward-URL bestätigte Werbung zählt
 ADSGRAM_SECRET = env("ADSGRAM_SECRET", "")
@@ -295,6 +297,7 @@ def state(con, user_id: int) -> dict:
             "SELECT invoice_id, amount, url FROM topups WHERE user_id=? AND status='active' AND created>? ORDER BY created DESC",
             (user_id, game.now() - 3600))], "adsgram_block_id": ADSGRAM_BLOCK_ID,
         "adsgram_int_id": ADSGRAM_INTERSTITIAL_ID, "monetag_zone": MONETAG_ZONE_ID,
+        "richads": {"pub": RICHADS_PUB_ID, "app": RICHADS_APP_ID} if (RICHADS_PUB_ID and RICHADS_APP_ID) else None,
         "star_packages": {k: {"diamonds": d, "stars": s} for k, (d, s) in game.STAR_PACKAGES.items()},
         "is_admin": is_admin(user_id, con),
         **events.player_view(con, user_id, u["lang"]),
@@ -381,7 +384,7 @@ def act_levelup(con, user_id, u, char, steps):
 
 def act_ad(con, user_id, u):
     t = game.now()
-    if not (ADSGRAM_BLOCK_ID or MONETAG_ZONE_ID or DEV_MODE):   # ohne Werbeanbieter keine Diamanten
+    if not (ADSGRAM_BLOCK_ID or MONETAG_ZONE_ID or RICHADS_PUB_ID or DEV_MODE):   # ohne Werbeanbieter keine Diamanten
         raise E(400, "ads_off")
     if t < u["last_ad"] + game.AD_COOLDOWN:
         raise E(400, "ad_wait", s=int(u['last_ad'] + game.AD_COOLDOWN - t) + 1)
@@ -696,7 +699,7 @@ async def admin_stats() -> dict:
             "rounds": [dict(r) for r in con.execute("SELECT period, views, revenue, pool AS paid, players, closed_at FROM rounds ORDER BY period DESC LIMIT 6")],
         }
     st["settings"] = {"payout_mode": PAYOUT_MODE, "payout_asset": PAYOUT_ASSET, "shop": SHOP_ENABLED,
-                      "ads": "AdsGram" if ADSGRAM_BLOCK_ID else ("Monetag" if MONETAG_ZONE_ID else "–"), "ecpm": ECPM_USD}
+                      "ads": ad_providers() or "–", "ecpm": ECPM_USD}
     st["cryptobot"] = None
     if CRYPTOPAY_TOKEN:
         try:
@@ -1202,13 +1205,25 @@ async def run_bot():
     await dp.start_polling(bot)
 
 
+def ad_providers() -> str:
+    """Reihenfolge, in der die App Werbung versucht."""
+    p = []
+    if ADSGRAM_BLOCK_ID.strip().isdigit():
+        p.append("AdsGram")
+    if RICHADS_PUB_ID and RICHADS_APP_ID:
+        p.append("RichAds")
+    if MONETAG_ZONE_ID:
+        p.append("Monetag")
+    return " → ".join(p)
+
+
 def check_config() -> None:
     """Prüft beim Start die wichtigsten Einstellungen und meldet Probleme deutlich im Log."""
     problems = []
     if not WEBAPP_URL.startswith("https://"):
         problems.append("WEBAPP_URL fehlt oder ist nicht https – die Mini App lässt sich nicht öffnen")
-    if not (ADSGRAM_BLOCK_ID or MONETAG_ZONE_ID):
-        problems.append("Kein Werbeanbieter (ADSGRAM_BLOCK_ID / MONETAG_ZONE_ID) – Videos und Diamanten sind gesperrt")
+    if not (ADSGRAM_BLOCK_ID or MONETAG_ZONE_ID or RICHADS_PUB_ID):
+        problems.append("Kein Werbeanbieter (ADSGRAM_BLOCK_ID / RICHADS_PUB_ID / MONETAG_ZONE_ID) – Videos und Diamanten sind gesperrt")
     if ADSGRAM_BLOCK_ID and not ADSGRAM_BLOCK_ID.strip().isdigit():
         problems.append(f"ADSGRAM_BLOCK_ID muss eine reine Zahl sein (z. B. 12345), eingetragen ist '{ADSGRAM_BLOCK_ID}' – AdsGram wird übersprungen")
     if ADSGRAM_INTERSTITIAL_ID and not (ADSGRAM_INTERSTITIAL_ID.startswith("int-") and ADSGRAM_INTERSTITIAL_ID[4:].isdigit()):
@@ -1224,7 +1239,7 @@ def check_config() -> None:
     for p in problems:
         log.warning("⚠️  %s", p)
     log.info("Start: Auszahlung=%s (%s), Shop=%s, Werbung=%s", PAYOUT_MODE, PAYOUT_ASSET,
-             "an" if SHOP_ENABLED else "aus", "AdsGram" if ADSGRAM_BLOCK_ID else ("Monetag" if MONETAG_ZONE_ID else "keine"))
+             "an" if SHOP_ENABLED else "aus", ad_providers() or "keine")
 
 
 async def main():

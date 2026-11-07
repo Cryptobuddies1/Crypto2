@@ -74,6 +74,8 @@ Wenn du in `game.py` etwas änderst, passe die gleichen Zahlen oben in `webapp/i
 1. Konto auf monetag.com → *Telegram Mini App* → App-URL hinzufügen → Zone **Rewarded Interstitial** erstellen.
 2. Die Zone-ID als `MONETAG_ZONE_ID` eintragen. Die App lädt `libtl.com/sdk.js` mit `data-zone` und ruft `show_<Zone-ID>()` auf. Vergleiche das einmal mit dem Code, den Monetag dir anzeigt.
 
+**RichAds:** `RICHADS_PUB_ID` und `RICHADS_APP_ID` (Standard 1028233 / 9592). Reihenfolge der Werbung: AdsGram → RichAds → Monetag.
+
 **Wichtig:** Solange weder `ADSGRAM_BLOCK_ID` noch `MONETAG_ZONE_ID` gesetzt ist, läuft der Entwicklungsmodus – Spieler bekommen Diamanten ohne echtes Video. Vor dem Start also unbedingt eintragen.
 
 ## Auszahlungen in TRX (CryptoBot)
