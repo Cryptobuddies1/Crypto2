@@ -514,6 +514,20 @@ async def characters_js():
     return FileResponse(BASE / "webapp" / "characters.js", media_type="application/javascript")
 
 
+PROMO_TYPES = {".jpg": "image/jpeg", ".pdf": "application/pdf"}
+
+
+@app.get("/promo/{name}")
+async def promo_file(name: str):
+    """Werbebanner und Whitepaper für Spieler zum Teilen."""
+    path = BASE / "webapp" / "promo" / name
+    ext = path.suffix.lower()
+    if "/" in name or ".." in name or ext not in PROMO_TYPES or not path.is_file():
+        raise HTTPException(404, "not found")
+    return FileResponse(path, media_type=PROMO_TYPES[ext], filename=f"CryptoBuddies_{name}",
+                        content_disposition_type="inline" if ext == ".pdf" else "attachment")
+
+
 @app.get("/adsgram/reward")
 async def adsgram_reward(userid: int, secret: str = ""):
     """AdsGram ruft diese Adresse auf, wenn ein Spieler eine Werbung zu Ende gesehen hat."""
