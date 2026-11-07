@@ -1,0 +1,4 @@
+# Geheimnisse und Daten nie hochladen
+.env
+*.db
+__pycache__/

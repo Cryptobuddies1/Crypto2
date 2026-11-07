@@ -1,0 +1,1002 @@
+[
+ {
+  "id": "pino_pinguin",
+  "name": "Pino Pinguin",
+  "edition": "klassik",
+  "rarity": "Normal",
+  "no": 1,
+  "price": 0,
+  "rate": 5,
+  "up": 60
+ },
+ {
+  "id": "fritzi_fuchs",
+  "name": "Fritzi Fuchs",
+  "edition": "klassik",
+  "rarity": "Normal",
+  "no": 2,
+  "price": 500,
+  "rate": 17.9,
+  "up": 200
+ },
+ {
+  "id": "igor_igel",
+  "name": "Igor Igel",
+  "edition": "klassik",
+  "rarity": "Normal",
+  "no": 3,
+  "price": 590,
+  "rate": 19.0,
+  "up": 240
+ },
+ {
+  "id": "ella_eule",
+  "name": "Ella Eule",
+  "edition": "klassik",
+  "rarity": "Normal",
+  "no": 4,
+  "price": 700,
+  "rate": 20.6,
+  "up": 280
+ },
+ {
+  "id": "toni_schildi",
+  "name": "Toni Schildi",
+  "edition": "klassik",
+  "rarity": "Normal",
+  "no": 5,
+  "price": 820,
+  "rate": 22.2,
+  "up": 330
+ },
+ {
+  "id": "axel_axolotl",
+  "name": "Axel Axolotl",
+  "edition": "klassik",
+  "rarity": "Normal",
+  "no": 6,
+  "price": 970,
+  "rate": 24.2,
+  "up": 390
+ },
+ {
+  "id": "kiki_katze",
+  "name": "Kiki Katze",
+  "edition": "klassik",
+  "rarity": "Normal",
+  "no": 7,
+  "price": 1140,
+  "rate": 26.5,
+  "up": 460
+ },
+ {
+  "id": "hanni_hase",
+  "name": "Hanni Hase",
+  "edition": "klassik",
+  "rarity": "Normal",
+  "no": 8,
+  "price": 1350,
+  "rate": 29.3,
+  "up": 540
+ },
+ {
+  "id": "bruno_baer",
+  "name": "Bruno Bär",
+  "edition": "klassik",
+  "rarity": "Normal",
+  "no": 9,
+  "price": 1590,
+  "rate": 32.4,
+  "up": 640
+ },
+ {
+  "id": "pauli_panda",
+  "name": "Pauli Panda",
+  "edition": "klassik",
+  "rarity": "Normal",
+  "no": 10,
+  "price": 1880,
+  "rate": 36.2,
+  "up": 750
+ },
+ {
+  "id": "fridolin_frosch",
+  "name": "Fridolin Frosch",
+  "edition": "klassik",
+  "rarity": "Normal",
+  "no": 11,
+  "price": 2220,
+  "rate": 40.4,
+  "up": 890
+ },
+ {
+  "id": "kalle_koala",
+  "name": "Kalle Koala",
+  "edition": "klassik",
+  "rarity": "Normal",
+  "no": 12,
+  "price": 2620,
+  "rate": 45.2,
+  "up": 1050
+ },
+ {
+  "id": "hubert_hamster",
+  "name": "Hubert Hamster",
+  "edition": "klassik",
+  "rarity": "Normal",
+  "no": 13,
+  "price": 3090,
+  "rate": 50.7,
+  "up": 1240
+ },
+ {
+  "id": "benno_biber",
+  "name": "Benno Biber",
+  "edition": "klassik",
+  "rarity": "Normal",
+  "no": 14,
+  "price": 3640,
+  "rate": 56.9,
+  "up": 1460
+ },
+ {
+  "id": "kai_krake",
+  "name": "Kai Krake",
+  "edition": "klassik",
+  "rarity": "Normal",
+  "no": 15,
+  "price": 4300,
+  "rate": 64.2,
+  "up": 1720
+ },
+ {
+  "id": "hektor_hund",
+  "name": "Hektor Hund",
+  "edition": "klassik",
+  "rarity": "Normal",
+  "no": 16,
+  "price": 5100,
+  "rate": 72.9,
+  "up": 2040
+ },
+ {
+  "id": "leo_loewe",
+  "name": "Leo Löwe",
+  "edition": "klassik",
+  "rarity": "Normal",
+  "no": 17,
+  "price": 6000,
+  "rate": 82.2,
+  "up": 2400
+ },
+ {
+  "id": "anton_affe",
+  "name": "Anton Affe",
+  "edition": "klassik",
+  "rarity": "Normal",
+  "no": 18,
+  "price": 7100,
+  "rate": 93.4,
+  "up": 2840
+ },
+ {
+  "id": "fabian_faultier",
+  "name": "Fabian Faultier",
+  "edition": "klassik",
+  "rarity": "Normal",
+  "no": 19,
+  "price": 8300,
+  "rate": 105.1,
+  "up": 3320
+ },
+ {
+  "id": "damian_drache",
+  "name": "Damian Drache",
+  "edition": "klassik",
+  "rarity": "Normal",
+  "no": 20,
+  "price": 9800,
+  "rate": 119.5,
+  "up": 3920
+ },
+ {
+  "id": "paul_pinguin",
+  "name": "Paul Pinguin",
+  "edition": "frost",
+  "rarity": "Selten",
+  "no": 21,
+  "price": 11600,
+  "rate": 136.5,
+  "up": 4640
+ },
+ {
+  "id": "felix_fuchs",
+  "name": "Felix Fuchs",
+  "edition": "frost",
+  "rarity": "Selten",
+  "no": 22,
+  "price": 13700,
+  "rate": 155.7,
+  "up": 5480
+ },
+ {
+  "id": "ida_igel",
+  "name": "Ida Igel",
+  "edition": "frost",
+  "rarity": "Selten",
+  "no": 23,
+  "price": 16200,
+  "rate": 178.0,
+  "up": 6480
+ },
+ {
+  "id": "emil_eule",
+  "name": "Emil Eule",
+  "edition": "frost",
+  "rarity": "Selten",
+  "no": 24,
+  "price": 19100,
+  "rate": 203.2,
+  "up": 7640
+ },
+ {
+  "id": "tilda_schildi",
+  "name": "Tilda Schildi",
+  "edition": "frost",
+  "rarity": "Selten",
+  "no": 25,
+  "price": 22500,
+  "rate": 232.0,
+  "up": 9000
+ },
+ {
+  "id": "anni_axolotl",
+  "name": "Anni Axolotl",
+  "edition": "frost",
+  "rarity": "Selten",
+  "no": 26,
+  "price": 26600,
+  "rate": 266.0,
+  "up": 10640
+ },
+ {
+  "id": "karl_katze",
+  "name": "Karl Katze",
+  "edition": "frost",
+  "rarity": "Selten",
+  "no": 27,
+  "price": 31300,
+  "rate": 303.9,
+  "up": 12520
+ },
+ {
+  "id": "hugo_hase",
+  "name": "Hugo Hase",
+  "edition": "frost",
+  "rarity": "Selten",
+  "no": 28,
+  "price": 37000,
+  "rate": 349.1,
+  "up": 14800
+ },
+ {
+  "id": "berta_baer",
+  "name": "Berta Bär",
+  "edition": "frost",
+  "rarity": "Selten",
+  "no": 29,
+  "price": 43600,
+  "rate": 400.0,
+  "up": 17440
+ },
+ {
+  "id": "pippa_panda",
+  "name": "Pippa Panda",
+  "edition": "frost",
+  "rarity": "Selten",
+  "no": 30,
+  "price": 51500,
+  "rate": 459.8,
+  "up": 20600
+ },
+ {
+  "id": "frieda_frosch",
+  "name": "Frieda Frosch",
+  "edition": "frost",
+  "rarity": "Selten",
+  "no": 31,
+  "price": 60800,
+  "rate": 528.7,
+  "up": 24320
+ },
+ {
+  "id": "koko_koala",
+  "name": "Koko Koala",
+  "edition": "frost",
+  "rarity": "Selten",
+  "no": 32,
+  "price": 71700,
+  "rate": 607.6,
+  "up": 28680
+ },
+ {
+  "id": "hilde_hamster",
+  "name": "Hilde Hamster",
+  "edition": "frost",
+  "rarity": "Selten",
+  "no": 33,
+  "price": 84600,
+  "rate": 699.2,
+  "up": 33840
+ },
+ {
+  "id": "baerbel_biber",
+  "name": "Bärbel Biber",
+  "edition": "frost",
+  "rarity": "Selten",
+  "no": 34,
+  "price": 99800,
+  "rate": 804.8,
+  "up": 39920
+ },
+ {
+  "id": "karla_krake",
+  "name": "Karla Krake",
+  "edition": "frost",
+  "rarity": "Selten",
+  "no": 35,
+  "price": 117800,
+  "rate": 927.6,
+  "up": 47120
+ },
+ {
+  "id": "hanna_hund",
+  "name": "Hanna Hund",
+  "edition": "frost",
+  "rarity": "Selten",
+  "no": 36,
+  "price": 139000,
+  "rate": 1069.2,
+  "up": 55600
+ },
+ {
+  "id": "lotte_loewe",
+  "name": "Lotte Löwe",
+  "edition": "frost",
+  "rarity": "Selten",
+  "no": 37,
+  "price": 164000,
+  "rate": 1233.1,
+  "up": 65600
+ },
+ {
+  "id": "ada_affe",
+  "name": "Ada Affe",
+  "edition": "frost",
+  "rarity": "Selten",
+  "no": 38,
+  "price": 193500,
+  "rate": 1422.8,
+  "up": 77400
+ },
+ {
+  "id": "fee_faultier",
+  "name": "Fee Faultier",
+  "edition": "frost",
+  "rarity": "Selten",
+  "no": 39,
+  "price": 228400,
+  "rate": 1643.2,
+  "up": 91360
+ },
+ {
+  "id": "dina_drache",
+  "name": "Dina Drache",
+  "edition": "frost",
+  "rarity": "Selten",
+  "no": 40,
+  "price": 269500,
+  "rate": 1897.9,
+  "up": 107800
+ },
+ {
+  "id": "pia_pinguin",
+  "name": "Pia Pinguin",
+  "edition": "lava",
+  "rarity": "Sehr selten",
+  "no": 41,
+  "price": 318000,
+  "rate": 2193.1,
+  "up": 127200
+ },
+ {
+  "id": "finja_fuchs",
+  "name": "Finja Fuchs",
+  "edition": "lava",
+  "rarity": "Sehr selten",
+  "no": 42,
+  "price": 375200,
+  "rate": 2535.1,
+  "up": 150080
+ },
+ {
+  "id": "ivo_igel",
+  "name": "Ivo Igel",
+  "edition": "lava",
+  "rarity": "Sehr selten",
+  "no": 43,
+  "price": 442700,
+  "rate": 2931.8,
+  "up": 177080
+ },
+ {
+  "id": "elsa_eule",
+  "name": "Elsa Eule",
+  "edition": "lava",
+  "rarity": "Sehr selten",
+  "no": 44,
+  "price": 522400,
+  "rate": 3392.2,
+  "up": 208960
+ },
+ {
+  "id": "theo_schildi",
+  "name": "Theo Schildi",
+  "edition": "lava",
+  "rarity": "Sehr selten",
+  "no": 45,
+  "price": 616400,
+  "rate": 3926.1,
+  "up": 246560
+ },
+ {
+  "id": "arno_axolotl",
+  "name": "Arno Axolotl",
+  "edition": "lava",
+  "rarity": "Sehr selten",
+  "no": 46,
+  "price": 727400,
+  "rate": 4546.2,
+  "up": 290960
+ },
+ {
+  "id": "kira_katze",
+  "name": "Kira Katze",
+  "edition": "lava",
+  "rarity": "Sehr selten",
+  "no": 47,
+  "price": 858300,
+  "rate": 5265.6,
+  "up": 343320
+ },
+ {
+  "id": "heidi_hase",
+  "name": "Heidi Hase",
+  "edition": "lava",
+  "rarity": "Sehr selten",
+  "no": 48,
+  "price": 1012800,
+  "rate": 6101.2,
+  "up": 405120
+ },
+ {
+  "id": "ben_baer",
+  "name": "Ben Bär",
+  "edition": "lava",
+  "rarity": "Sehr selten",
+  "no": 49,
+  "price": 1195200,
+  "rate": 7072.2,
+  "up": 478080
+ },
+ {
+  "id": "piet_panda",
+  "name": "Piet Panda",
+  "edition": "lava",
+  "rarity": "Sehr selten",
+  "no": 50,
+  "price": 1410300,
+  "rate": 8199.4,
+  "up": 564120
+ },
+ {
+  "id": "frank_frosch",
+  "name": "Frank Frosch",
+  "edition": "lava",
+  "rarity": "Sehr selten",
+  "no": 51,
+  "price": 1664100,
+  "rate": 9509.1,
+  "up": 665640
+ },
+ {
+  "id": "konrad_koala",
+  "name": "Konrad Koala",
+  "edition": "lava",
+  "rarity": "Sehr selten",
+  "no": 52,
+  "price": 1963700,
+  "rate": 11032.0,
+  "up": 785480
+ },
+ {
+  "id": "harry_hamster",
+  "name": "Harry Hamster",
+  "edition": "lava",
+  "rarity": "Sehr selten",
+  "no": 53,
+  "price": 2317100,
+  "rate": 12801.7,
+  "up": 926840
+ },
+ {
+  "id": "bastian_biber",
+  "name": "Bastian Biber",
+  "edition": "lava",
+  "rarity": "Sehr selten",
+  "no": 54,
+  "price": 2734200,
+  "rate": 14859.8,
+  "up": 1093680
+ },
+ {
+  "id": "kuno_krake",
+  "name": "Kuno Krake",
+  "edition": "lava",
+  "rarity": "Sehr selten",
+  "no": 55,
+  "price": 3226400,
+  "rate": 17253.5,
+  "up": 1290560
+ },
+ {
+  "id": "helmut_hund",
+  "name": "Helmut Hund",
+  "edition": "lava",
+  "rarity": "Sehr selten",
+  "no": 56,
+  "price": 3807100,
+  "rate": 20037.4,
+  "up": 1522840
+ },
+ {
+  "id": "lenny_loewe",
+  "name": "Lenny Löwe",
+  "edition": "lava",
+  "rarity": "Sehr selten",
+  "no": 57,
+  "price": 4492400,
+  "rate": 23276.7,
+  "up": 1796960
+ },
+ {
+  "id": "ali_affe",
+  "name": "Ali Affe",
+  "edition": "lava",
+  "rarity": "Sehr selten",
+  "no": 58,
+  "price": 5301100,
+  "rate": 27046.4,
+  "up": 2120440
+ },
+ {
+  "id": "falk_faultier",
+  "name": "Falk Faultier",
+  "edition": "lava",
+  "rarity": "Sehr selten",
+  "no": 59,
+  "price": 6255200,
+  "rate": 31433.2,
+  "up": 2502080
+ },
+ {
+  "id": "diego_drache",
+  "name": "Diego Drache",
+  "edition": "lava",
+  "rarity": "Sehr selten",
+  "no": 60,
+  "price": 7381200,
+  "rate": 36540.6,
+  "up": 2952480
+ },
+ {
+  "id": "pepe_pinguin",
+  "name": "Pepe Pinguin",
+  "edition": "gold",
+  "rarity": "Legendär",
+  "no": 61,
+  "price": 8709800,
+  "rate": 42486.8,
+  "up": 3483920
+ },
+ {
+  "id": "fred_fuchs",
+  "name": "Fred Fuchs",
+  "edition": "gold",
+  "rarity": "Legendär",
+  "no": 62,
+  "price": 10277600,
+  "rate": 49411.5,
+  "up": 4111040
+ },
+ {
+  "id": "ilse_igel",
+  "name": "Ilse Igel",
+  "edition": "gold",
+  "rarity": "Legendär",
+  "no": 63,
+  "price": 12127500,
+  "rate": 57476.3,
+  "up": 4851000
+ },
+ {
+  "id": "erik_eule",
+  "name": "Erik Eule",
+  "edition": "gold",
+  "rarity": "Legendär",
+  "no": 64,
+  "price": 14310500,
+  "rate": 66871.5,
+  "up": 5724200
+ },
+ {
+  "id": "tara_schildi",
+  "name": "Tara Schildi",
+  "edition": "gold",
+  "rarity": "Legendär",
+  "no": 65,
+  "price": 16886400,
+  "rate": 77817.5,
+  "up": 6754560
+ },
+ {
+  "id": "alma_axolotl",
+  "name": "Alma Axolotl",
+  "edition": "gold",
+  "rarity": "Legendär",
+  "no": 66,
+  "price": 19925900,
+  "rate": 90572.3,
+  "up": 7970360
+ },
+ {
+  "id": "kurt_katze",
+  "name": "Kurt Katze",
+  "edition": "gold",
+  "rarity": "Legendär",
+  "no": 67,
+  "price": 23512600,
+  "rate": 105437.7,
+  "up": 9405040
+ },
+ {
+  "id": "hans_hase",
+  "name": "Hans Hase",
+  "edition": "gold",
+  "rarity": "Legendär",
+  "no": 68,
+  "price": 27744900,
+  "rate": 122765.0,
+  "up": 11097960
+ },
+ {
+  "id": "bella_baer",
+  "name": "Bella Bär",
+  "edition": "gold",
+  "rarity": "Legendär",
+  "no": 69,
+  "price": 32738900,
+  "rate": 142964.6,
+  "up": 13095560
+ },
+ {
+  "id": "paula_panda",
+  "name": "Paula Panda",
+  "edition": "gold",
+  "rarity": "Legendär",
+  "no": 70,
+  "price": 38631900,
+  "rate": 166516.8,
+  "up": 15452760
+ },
+ {
+  "id": "fanny_frosch",
+  "name": "Fanny Frosch",
+  "edition": "gold",
+  "rarity": "Legendär",
+  "no": 71,
+  "price": 45585700,
+  "rate": 193981.7,
+  "up": 18234280
+ },
+ {
+  "id": "kaja_koala",
+  "name": "Kaja Koala",
+  "edition": "gold",
+  "rarity": "Legendär",
+  "no": 72,
+  "price": 53791100,
+  "rate": 226013.0,
+  "up": 21516440
+ },
+ {
+  "id": "henni_hamster",
+  "name": "Henni Hamster",
+  "edition": "gold",
+  "rarity": "Legendär",
+  "no": 73,
+  "price": 63473500,
+  "rate": 263375.5,
+  "up": 25389400
+ },
+ {
+  "id": "britta_biber",
+  "name": "Britta Biber",
+  "edition": "gold",
+  "rarity": "Legendär",
+  "no": 74,
+  "price": 74898700,
+  "rate": 306961.9,
+  "up": 29959480
+ },
+ {
+  "id": "kim_krake",
+  "name": "Kim Krake",
+  "edition": "gold",
+  "rarity": "Legendär",
+  "no": 75,
+  "price": 88380500,
+  "rate": 357815.8,
+  "up": 35352200
+ },
+ {
+  "id": "herta_hund",
+  "name": "Herta Hund",
+  "edition": "gold",
+  "rarity": "Legendär",
+  "no": 76,
+  "price": 104289000,
+  "rate": 417156.0,
+  "up": 41715600
+ },
+ {
+  "id": "lia_loewe",
+  "name": "Lia Löwe",
+  "edition": "gold",
+  "rarity": "Legendär",
+  "no": 77,
+  "price": 123061000,
+  "rate": 486407.1,
+  "up": 49224400
+ },
+ {
+  "id": "amelie_affe",
+  "name": "Amelie Affe",
+  "edition": "gold",
+  "rarity": "Legendär",
+  "no": 78,
+  "price": 145212000,
+  "rate": 567234.4,
+  "up": 58084800
+ },
+ {
+  "id": "fiona_faultier",
+  "name": "Fiona Faultier",
+  "edition": "gold",
+  "rarity": "Legendär",
+  "no": 79,
+  "price": 171350200,
+  "rate": 661583.8,
+  "up": 68540080
+ },
+ {
+  "id": "dalia_drache",
+  "name": "Dalia Drache",
+  "edition": "gold",
+  "rarity": "Legendär",
+  "no": 80,
+  "price": 202193200,
+  "rate": 771729.8,
+  "up": 80877280
+ },
+ {
+  "id": "polly_pinguin",
+  "name": "Polly Pinguin",
+  "edition": "kosmos",
+  "rarity": "Epic",
+  "no": 81,
+  "price": 238588000,
+  "rate": 900332.1,
+  "up": 95435200
+ },
+ {
+  "id": "flo_fuchs",
+  "name": "Flo Fuchs",
+  "edition": "kosmos",
+  "rarity": "Epic",
+  "no": 82,
+  "price": 281533800,
+  "rate": 1050499.3,
+  "up": 112613520
+ },
+ {
+  "id": "ingo_igel",
+  "name": "Ingo Igel",
+  "edition": "kosmos",
+  "rarity": "Epic",
+  "no": 83,
+  "price": 332209900,
+  "rate": 1225866.8,
+  "up": 132883960
+ },
+ {
+  "id": "edda_eule",
+  "name": "Edda Eule",
+  "edition": "kosmos",
+  "rarity": "Epic",
+  "no": 84,
+  "price": 392007700,
+  "rate": 1430685.0,
+  "up": 156803080
+ },
+ {
+  "id": "timo_schildi",
+  "name": "Timo Schildi",
+  "edition": "kosmos",
+  "rarity": "Epic",
+  "no": 85,
+  "price": 462569100,
+  "rate": 1669924.5,
+  "up": 185027640
+ },
+ {
+  "id": "ari_axolotl",
+  "name": "Ari Axolotl",
+  "edition": "kosmos",
+  "rarity": "Epic",
+  "no": 86,
+  "price": 545831500,
+  "rate": 1949398.2,
+  "up": 218332600
+ },
+ {
+  "id": "klara_katze",
+  "name": "Klara Katze",
+  "edition": "kosmos",
+  "rarity": "Epic",
+  "no": 87,
+  "price": 644081200,
+  "rate": 2275905.3,
+  "up": 257632480
+ },
+ {
+  "id": "hedi_hase",
+  "name": "Hedi Hase",
+  "edition": "kosmos",
+  "rarity": "Epic",
+  "no": 88,
+  "price": 760015800,
+  "rate": 2657397.9,
+  "up": 304006320
+ },
+ {
+  "id": "bodo_baer",
+  "name": "Bodo Bär",
+  "edition": "kosmos",
+  "rarity": "Epic",
+  "no": 89,
+  "price": 896818700,
+  "rate": 3103178.9,
+  "up": 358727480
+ },
+ {
+  "id": "pablo_panda",
+  "name": "Pablo Panda",
+  "edition": "kosmos",
+  "rarity": "Epic",
+  "no": 90,
+  "price": 1058246000,
+  "rate": 3624130.1,
+  "up": 423298400
+ },
+ {
+  "id": "ferdi_frosch",
+  "name": "Ferdi Frosch",
+  "edition": "kosmos",
+  "rarity": "Epic",
+  "no": 91,
+  "price": 1248730300,
+  "rate": 4232984.1,
+  "up": 499492120
+ },
+ {
+  "id": "knut_koala",
+  "name": "Knut Koala",
+  "edition": "kosmos",
+  "rarity": "Epic",
+  "no": 92,
+  "price": 1473501800,
+  "rate": 4944636.9,
+  "up": 589400720
+ },
+ {
+  "id": "holger_hamster",
+  "name": "Holger Hamster",
+  "edition": "kosmos",
+  "rarity": "Epic",
+  "no": 93,
+  "price": 1738732100,
+  "rate": 5776518.6,
+  "up": 695492840
+ },
+ {
+  "id": "boris_biber",
+  "name": "Boris Biber",
+  "edition": "kosmos",
+  "rarity": "Epic",
+  "no": 94,
+  "price": 2051703900,
+  "rate": 6749026.0,
+  "up": 820681560
+ },
+ {
+  "id": "kasimir_krake",
+  "name": "Kasimir Krake",
+  "edition": "kosmos",
+  "rarity": "Epic",
+  "no": 95,
+  "price": 2421010600,
+  "rate": 7886028.0,
+  "up": 968404240
+ },
+ {
+  "id": "hasso_hund",
+  "name": "Hasso Hund",
+  "edition": "kosmos",
+  "rarity": "Epic",
+  "no": 96,
+  "price": 2856792500,
+  "rate": 9215459.7,
+  "up": 1142717000
+ },
+ {
+  "id": "ludwig_loewe",
+  "name": "Ludwig Löwe",
+  "edition": "kosmos",
+  "rarity": "Epic",
+  "no": 97,
+  "price": 3371015100,
+  "rate": 10770016.3,
+  "up": 1348406040
+ },
+ {
+  "id": "august_affe",
+  "name": "August Affe",
+  "edition": "kosmos",
+  "rarity": "Epic",
+  "no": 98,
+  "price": 3977797800,
+  "rate": 12587967.7,
+  "up": 1591119120
+ },
+ {
+  "id": "florian_faultier",
+  "name": "Florian Faultier",
+  "edition": "kosmos",
+  "rarity": "Epic",
+  "no": 99,
+  "price": 4693801400,
+  "rate": 14714111.0,
+  "up": 1877520560
+ },
+ {
+  "id": "dorian_drache",
+  "name": "Dorian Drache",
+  "edition": "kosmos",
+  "rarity": "Epic",
+  "no": 100,
+  "price": 5538685700,
+  "rate": 17200887.3,
+  "up": 2215474280
+ }
+]
