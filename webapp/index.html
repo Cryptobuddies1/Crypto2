@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="icon" href="/logo.png">
+<title>Crypto Buddies</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f6f8; --surface:#fff; --ink:#0f172a; --ink2:#334155; --muted:#64748b; --faint:#94a3b8;
+  --line:#e8eaee; --soft:#f1f3f6; --accent:#5b4bdb; --accent-soft:#eeebff; --green:#16a34a; --green-soft:#e8f7ee;
+  --amber:#d97706; --r:18px; --shadow:0 1px 2px rgba(15,23,42,.04),0 4px 16px rgba(15,23,42,.05);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,sans-serif;font-size:15px;-webkit-font-smoothing:antialiased}
+body{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+button{font-family:inherit;cursor:pointer;border:0}
+.wrap{max-width:520px;margin:0 auto;padding:0 16px}
+.num{font-variant-numeric:tabular-nums}
+
+/* Kopfzeile */
+header{position:sticky;top:0;z-index:10;background:rgba(245,246,248,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;height:56px}
+.brand{font-weight:800;font-size:17px;letter-spacing:-.2px;display:flex;align-items:center;gap:8px}
+.brand svg{flex:none;border-radius:9px}
+.brand i{width:26px;height:26px;border-radius:8px;background:var(--accent);display:grid;place-items:center;color:#fff;font-style:normal;font-size:14px}
+.chips{display:flex;gap:6px}
+.chip{display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 11px;font-weight:700;font-size:13px}
+.demo-tag{font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:2px 7px;border-radius:6px;margin-left:4px}
+
+/* Runde */
+.round{background:var(--ink);color:#fff;border-radius:22px;padding:18px;margin:4px 0 18px;position:relative;overflow:hidden}
+.round::after{content:"";position:absolute;right:-60px;top:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(124,108,255,.45),transparent 65%)}
+.round .lbl{font-size:12px;color:#a5adbd;font-weight:600}
+.round .big{font-size:30px;font-weight:800;letter-spacing:-.5px;margin:2px 0 14px}
+.round .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;position:relative;z-index:1}
+.round .row3 b{display:block;font-size:15px;font-weight:700;margin-top:2px}
+.hint{display:flex;gap:8px;align-items:center;background:rgba(255,255,255,.08);border-radius:12px;padding:9px 11px;margin-top:14px;font-size:12.5px;color:#d7dbe4;position:relative;z-index:1}
+.hint.ok{color:#9ae6b4}
+
+h2{font-size:18px;font-weight:800;letter-spacing:-.2px;margin:22px 0 4px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 12px}
+.card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:16px;margin-bottom:12px}
+
+/* Buttons */
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:13px 14px;border-radius:14px;font-weight:700;font-size:14.5px;background:var(--accent);color:#fff;transition:transform .08s,opacity .2s}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.38;cursor:default;transform:none}
+.btn.ghost{background:var(--soft);color:var(--ink)}
+.btn.green{background:var(--green)}
+.btn small{font-weight:600;opacity:.8}
+
+/* Sammlung */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.fig{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;text-align:left;padding:0;color:inherit}
+.fig .art{aspect-ratio:1;display:grid;place-items:center;position:relative}
+.fig .art svg{width:86%;height:86%}
+.fig .lv{position:absolute;top:7px;left:7px;background:rgba(255,255,255,.92);font-size:10.5px;font-weight:700;border-radius:7px;padding:2px 6px;color:var(--ink)}
+.fig .dot{position:absolute;top:9px;right:9px;width:8px;height:8px;border-radius:50%}
+.fig .meta{padding:8px 9px 10px}
+.fig .nm{font-weight:700;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fig .pr{font-size:11.5px;color:var(--green);font-weight:600;margin-top:1px}
+.fig.locked .art svg{filter:brightness(0);opacity:.12}
+.fig.locked .art{background:var(--soft)!important}
+.fig.locked .nm{color:var(--faint)}
+.seg{display:flex;background:var(--soft);border-radius:12px;padding:3px;margin-bottom:12px}
+.seg button{flex:1;background:none;padding:8px;border-radius:9px;font-weight:600;font-size:13px;color:var(--muted)}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.empty{text-align:center;padding:28px 16px}
+.empty p{color:var(--muted);margin:6px 0 16px}
+
+/* Packs */
+.pack{display:flex;gap:14px;align-items:center}
+.pack .box{width:76px;height:96px;border-radius:14px;flex:none;display:grid;place-items:center;position:relative;overflow:hidden;color:#fff;font-weight:800;font-size:11px;letter-spacing:.08em}
+.pack .box::before{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.45) 45%,transparent 60%);animation:shine 3.2s infinite}
+@keyframes shine{0%{transform:translateX(-100%)}60%,100%{transform:translateX(100%)}}
+.box.start{background:linear-gradient(150deg,#7c6cff,#5b4bdb)}
+.box.bronze{background:linear-gradient(150deg,#e4a676,#a8622f)}
+.box.silber{background:linear-gradient(150deg,#e5e9f0,#98a2b3);color:#334155}
+.box.gold{background:linear-gradient(150deg,#fde68a,#d4a017);color:#5b3b00}
+.pack .info{flex:1;min-width:0}
+.pack .t{font-weight:700;font-size:16px}
+.pack .d{color:var(--muted);font-size:12.5px;margin:2px 0 10px}
+.jp{padding:6px 14px;border:1.5px solid #f2c94c;background:linear-gradient(180deg,#fffaf0,#fff)}
+.jprow{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid #f6ead0}
+.jprow:first-child{border-top:0}
+.jpart{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;flex:none}
+.jpart svg{width:90%;height:90%}
+.jprow b{display:block;font-weight:700;font-size:14px}
+.jprow span{color:var(--muted);font-size:12px}
+.jpusd{font-weight:800;font-size:18px;color:#b7791f;text-align:right}
+.jpusd small{font-size:11px;font-weight:600;color:var(--muted)}
+.shopgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.shopitem{background:var(--surface);box-shadow:var(--shadow);border-radius:16px;padding:16px 12px;text-align:center;color:var(--ink)}
+.shopitem b{display:block;font-size:17px;font-weight:800}
+.shopitem span{display:block;margin-top:4px;color:var(--accent);font-weight:700;font-size:13.5px}
+.shopitem:disabled{opacity:.4}
+.chiprow{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.chiprow .btn{padding:11px 4px;font-size:13px}
+.switch{position:relative;width:46px;height:28px;border-radius:28px;background:var(--line);flex:none;transition:.2s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:.2s}
+.switch.on{background:var(--green)}.switch.on::after{left:21px}
+.tour .tname,.card .tname{font-weight:700;font-size:16px}
+.tleft{flex:none;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:12px;padding:5px 9px;border-radius:9px;white-space:nowrap}
+.prizes{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 4px}
+.prizes span{background:var(--soft);border-radius:9px;padding:5px 9px;font-size:12.5px;font-weight:600}
+.me{margin:10px 0 2px;padding:10px 12px;border-radius:12px;background:#fffbeb;font-size:13.5px;color:var(--ink2)}
+.nbody{white-space:pre-wrap;color:var(--ink2);line-height:1.5}
+.bonus{padding:14px 16px}
+.bonus b{font-weight:700}
+.bonus span{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
+.bonus.done{background:linear-gradient(180deg,#fffaf0,#fff);border:1.5px solid #f2c94c}
+.seg button{white-space:nowrap}
+.fig.isjp{outline:2px solid #f2c94c}
+.tag.jptag{background:linear-gradient(90deg,#f6c445,#d69e2e);margin-left:4px}
+.odds{display:flex;height:6px;border-radius:6px;overflow:hidden;margin:2px 0 6px;background:var(--soft)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:11px;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--c);margin-right:4px;vertical-align:0}
+
+/* Belohnungen */
+.reward{display:flex;align-items:center;gap:14px}
+.reward .ic{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;flex:none;font-size:22px;background:var(--accent-soft)}
+.reward .tx{flex:1}
+.reward .tx b{display:block;font-weight:700}
+.reward .tx span{color:var(--muted);font-size:12.5px}
+.reward .btn{width:auto;padding:10px 14px;font-size:13.5px}
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:14px}
+.days div{background:var(--soft);border-radius:10px;padding:7px 0;text-align:center;font-size:11px;font-weight:600;color:var(--muted)}
+.days div b{display:block;font-size:12px;color:var(--ink2)}
+.days .done{background:var(--accent);color:#e0dcff}.days .done b{color:#fff}
+.days .next{outline:1.5px dashed var(--accent)}
+
+/* Wallet */
+.bal{font-size:34px;font-weight:800;letter-spacing:-.6px}
+.bar{height:8px;border-radius:8px;background:var(--soft);overflow:hidden;margin:12px 0 6px}
+.bar i{display:block;height:100%;background:var(--green);border-radius:8px;transition:width .4s}
+.kv{display:flex;justify-content:space-between;padding:11px 0;border-top:1px solid var(--line);font-size:14px}
+.kv:first-child{border-top:0}
+.kv span{color:var(--muted)}
+.kv b{font-weight:600}
+.steps{margin:0;padding-left:18px;color:var(--ink2);font-size:13.5px;line-height:1.7}
+.lb{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
+.lb:first-child{border-top:0}
+.lb .rk{width:22px;color:var(--muted);font-weight:700}
+.lb .n{flex:1;font-weight:600}
+
+/* Navigation */
+nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(255,255,255,.94);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav .wrap{display:flex;padding:0 8px}
+nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0 8px;color:var(--faint);text-decoration:none;font-size:11px;font-weight:600;position:relative}
+nav a svg{width:23px;height:23px}
+nav a.act{color:var(--accent)}
+nav a .badge{position:absolute;top:6px;left:calc(50% + 8px);width:8px;height:8px;border-radius:50%;background:#ef4444;border:2px solid #fff}
+
+/* Bottom Sheet */
+.scrim{position:fixed;inset:0;background:rgba(15,23,42,.38);z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;background:var(--surface);border-radius:24px 24px 0 0;max-width:560px;margin:0 auto;transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1);padding:10px 18px calc(20px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
+.sheet.on{transform:none}
+.x{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;background:var(--soft);color:var(--muted);font-size:14px;z-index:2}
+.grab{width:38px;height:5px;border-radius:5px;background:var(--line);margin:0 auto 12px}
+.detail-art{border-radius:20px;aspect-ratio:1.7;display:grid;place-items:center;margin-bottom:14px}
+.detail-art svg{height:88%}
+.tag{display:inline-block;font-size:11px;font-weight:700;color:#fff;padding:3px 8px;border-radius:7px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}
+.stat{background:var(--soft);border-radius:14px;padding:11px 12px}
+.stat span{display:block;font-size:12px;color:var(--muted);font-weight:500}
+.stat b{font-size:17px;font-weight:700}
+.stat b em{font-style:normal;color:var(--green);font-size:13px;font-weight:600}
+.btn-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.btn-row .btn{flex-direction:column;gap:1px;padding:10px 6px;font-size:14px}
+
+/* Pack öffnen */
+.reveal{position:fixed;inset:0;z-index:60;background:radial-gradient(circle at 50% 40%,#2a2350,#0b0a17 70%);display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;color:#fff}
+.reveal.on{display:flex}
+.rv-pack{width:150px;height:190px;border-radius:22px;animation:shake .7s ease-in-out 2}
+@keyframes shake{0%,100%{transform:rotate(0)}25%{transform:rotate(-6deg) scale(1.04)}75%{transform:rotate(6deg) scale(1.04)}}
+.rv-card{width:240px;border-radius:24px;overflow:hidden;background:#fff;color:var(--ink);transform:scale(.6);opacity:0;transition:transform .45s cubic-bezier(.2,1.4,.4,1),opacity .3s}
+.rv-card.on{transform:none;opacity:1}
+.rv-card .art{aspect-ratio:1;display:grid;place-items:center}
+.rv-card .art svg{width:82%}
+.rv-card .m{padding:12px 14px 16px;text-align:center}
+.rv-card .m b{font-size:18px;font-weight:800;display:block;margin:6px 0 2px}
+.rv-glow{position:absolute;width:340px;height:340px;border-radius:50%;filter:blur(40px);opacity:.55;z-index:-1}
+.rv-note{margin-top:18px;color:#c9c6e8;font-size:14px;text-align:center;min-height:20px}
+.reveal .btn{max-width:240px;margin-top:14px}
+
+/* Demo-Werbung */
+.ad{position:fixed;inset:0;z-index:70;background:#000;color:#fff;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;font-weight:600}
+.ad.on{display:flex}
+
+.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));transform:translate(-50%,10px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-weight:600;font-size:13.5px;opacity:0;transition:.2s;pointer-events:none;z-index:80;max-width:90vw;text-align:center}
+.lang{appearance:none;-webkit-appearance:none;font-family:inherit;color:var(--ink);cursor:pointer;padding:6px 10px;outline:none}
+.reflink{display:flex;gap:8px;margin-top:12px}
+.reflink input{flex:1;min-width:0;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;font-size:13px;color:var(--ink2);background:var(--soft)}
+.reflink .btn{width:auto;padding:10px 14px;font-size:13.5px}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="30" height="30" aria-hidden="true"> <defs> <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c6cff"/><stop offset="1" stop-color="#4a36c9"/></linearGradient> <radialGradient id="coin" cx=".38" cy=".32" r=".8"><stop offset="0" stop-color="#ffe9a3"/><stop offset=".55" stop-color="#fbbf24"/><stop offset="1" stop-color="#d48806"/></radialGradient> <radialGradient id="glow" cx=".5" cy=".45" r=".5"><stop offset="0" stop-color="#fff" stop-opacity=".28"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient> </defs> <rect width="512" height="512" rx="116" fill="url(#bg)"/> <circle cx="256" cy="262" r="210" fill="url(#glow)"/> <circle cx="150" cy="150" r="52" fill="#e3a414"/><circle cx="150" cy="150" r="28" fill="#fde68a"/> <circle cx="362" cy="150" r="52" fill="#e3a414"/><circle cx="362" cy="150" r="28" fill="#fde68a"/> <circle cx="256" cy="276" r="150" fill="#c27c05"/> <circle cx="256" cy="268" r="150" fill="url(#coin)"/> <circle cx="256" cy="268" r="124" fill="none" stroke="#f59e0b" stroke-width="10" opacity=".55"/> <ellipse cx="208" cy="256" rx="20" ry="24" fill="#1f1a3d"/><ellipse cx="304" cy="256" rx="20" ry="24" fill="#1f1a3d"/> <circle cx="215" cy="247" r="7.5" fill="#fff"/><circle cx="311" cy="247" r="7.5" fill="#fff"/> <ellipse cx="172" cy="300" rx="20" ry="12" fill="#f472b6" opacity=".55"/><ellipse cx="340" cy="300" rx="20" ry="12" fill="#f472b6" opacity=".55"/> <path d="M226 304q30 30 60 0" stroke="#1f1a3d" stroke-width="12" fill="none" stroke-linecap="round"/> <path d="M168 196a118 118 0 0 1 60-50" stroke="#fff" stroke-width="14" fill="none" stroke-linecap="round" opacity=".6"/> <path d="M412 92l7 20 20 7-20 7-7 20-7-20-20-7 20-7z" fill="#fff" opacity=".9"/> <path d="M96 410l5 13 13 5-13 5-5 13-5-13-13-5 13-5z" fill="#fff" opacity=".7"/> </svg> <span>Crypto Buddies</span></div>
+  <div class="chips">
+    <select class="chip lang" id="langSel" aria-label="Language"><option value="en">🇬🇧 EN</option><option value="de">🇩🇪 DE</option></select>
+    <a class="chip num" href="#belohnungen" style="text-decoration:none;color:inherit">💎 <span id="hDia">0</span></a>
+    <a class="chip num" href="#wallet" style="text-decoration:none;color:inherit">$ <span id="hUsd">0,00</span></a>
+  </div>
+</div></header>
+
+<main class="wrap" id="view"></main>
+
+<nav><div class="wrap" id="nav">
+  <a href="#sammlung" data-t="sammlung"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg><span data-i18n="nav_collection"></span></a>
+  <a href="#packs" data-t="packs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg><span data-i18n="nav_packs"></span></a>
+  <a href="#belohnungen" data-t="belohnungen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20M12 21L8 9l4-6 4 6z"/></svg><span data-i18n="nav_diamonds"></span></a>
+  <a href="#events" data-t="events"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4zM17 5h3v2a3 3 0 01-3 3M7 5H4v2a3 3 0 003 3"/></svg><span data-i18n="nav_events"></span></a>
+  <a href="#wallet" data-t="wallet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="3"/><path d="M2 10h20M16 15h2M6 6l9-3 1 3"/></svg><span data-i18n="nav_wallet"></span></a>
+</div></nav>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet"></div>
+<div class="reveal" id="reveal"></div>
+<div class="toast" id="toast"></div>
+
+<script src="characters.js"></script>
+<script>
+/* ================================================================ Sprache */
+const I18N = {
+  en:{
+    nav_collection:"Collection", nav_packs:"Packs", nav_diamonds:"Diamonds", nav_wallet:"Wallet", nav_events:"Events",
+    ev_title:"Events", tournaments:"Tournaments", news:"News", no_events:"No tournament running right now – check back soon!", no_news:"No news yet.",
+    ends_in:"Ends in {t}", starts_in:"Starts in {t}", ended:"Ended", your_rank:"Your rank", not_ranked:"Not ranked yet – {m} to join!", prizes:"Prizes",
+    upcoming:"Upcoming", results:"Results", rank_short:"#{n}", admin_open:"⚙️ Admin panel", d_short:"d", h_short:"h", m_short:"m",
+    next_credit:"Next credit in", earned_round:"Earned this round", profit_day:"Profit per day", collection:"Collection",
+    eligible:"✓ You take part in the payout", not_eligible:"ⓘ Watch at least {n} video today, otherwise this round's earnings expire.",
+    no_figs:"No figures yet", no_figs_txt:"Open your free starter pack and get your first buddy.", to_packs:"Go to packs",
+    mine:"Mine", jackpot:"Jackpot", per_day:"/day", jp_info:"4 extra figures – they don't count towards the collection and can be in any pack.",
+    packs_sub:"Every pack contains a random figure. Duplicate: 40 % of the diamonds back.", free:"FREE", open_free:"Open for free", open:"Open",
+    dup_back:"Duplicate: +{n} 💎 back", get_diamonds:"Get diamonds under <a href=\"#belohnungen\" style=\"color:var(--accent);font-weight:600\">Diamonds</a>.",
+    diamonds:"Diamonds", you_have:"You have", watch_video:"Watch video", watched_today:"{n} watched today", watch:"Watch",
+    daily_bonus:"Daily bonus", daily_sub:"Claim every day, the streak grows", done:"Done", day:"Day",
+    invite:"Invite friends", invite_sub:"+{p} % of everything your friends earn · +{n} 💎 for both of you", invite_btn:"Invite",
+    invited:"Invited", ref_earned:"Referral bonus earned", copy:"Copy", copied:"Link copied", ref_wait:"Your invite link appears once the bot is online.",
+    share_text:"Collect Crypto Buddies with me – we both get {n} 💎!",
+    wallet_sub:"Automatic payout every 4 hours", balance:"Balance", auto_off:"Automatic payout is off – your balance is being saved",
+    paid_next:"Will be paid out in the next round", payout_from:"Payout from {n} – saved until then", auto_payout:"Automatic payout",
+    deposit_only:"Deposit (diamonds only)", next_round:"Next round in", credited_last:"Credited last round", paid_total:"Paid out so far",
+    how_get:"How to get your money", step1:"Open <b>@CryptoBot</b> in Telegram once and press Start.", step2:"Done. From {n} your payout arrives there automatically in {a}.",
+    wallet_note:"Your figures' earnings are credited every 4 hours. Requirement: at least {n} video in the last 24 hours.",
+    payouts:"Payouts", st_done:"Sent", st_pending:"Processing", st_failed:"Failed", leaderboard:"Leaderboard",
+    jp_title:"Jackpot figures", jp_sub:"4 extra figures with a fixed daily profit. They can be in any Bronze, Silver or Gold pack.", in_coll:"✓ In your collection",
+    coll_done:"🏆 Collection complete", coll_done_txt:"Your bonus of {n} $ has been credited.", coll_bonus:"Collection bonus", coll_sub:"Collect all {t} figures – {r} to go.",
+    buy_title:"Buy diamonds", buy_sub:"{n} 💎 = $1 · paid from your deposit first, then from your balance", deposit:"Deposit", earned_bal:"Balance (earned)",
+    topup:"Top up", topup_sub:"Via @CryptoBot – pay with USDT or TRX. Topped-up money can only be used for diamonds.", open_inv:"{n} open", pay:"Pay", check_pay:"Check payment",
+    level:"Level", next_level:"next level +{n}", max_level:"Maximum level reached", pulled:"{n}× pulled", close:"Close",
+    all_collected:"🏆 All {t} collected! +{n} $ bonus.", jp_hit:"🎰 JACKPOT! {n} $ per day – forever.", dup:"Duplicate! +{n} 💎 back.", new_fig:"New in your collection!", next:"Continue", per_day_long:"per day",
+    ad_cancel:"Video cancelled", only_tg:"Open in Telegram", only_tg_txt:"Crypto Buddies runs inside Telegram. Open the bot and tap “Play”.", no_ad:"No video available right now – try again in a moment", lv_toast:"+{n} level{s} · 💎 −{c}", daily_toast:"Daily bonus: +{n} 💎", bought:"+{n} 💎 bought",
+    after_pay:"After paying, tap “Check payment”", updated:"Updated", thanks:"Thank you! Diamonds are on their way.", conn_fail:"Connection failed", server_err:"Server error",
+    not_enough:"Not enough diamonds", starter_used:"Starter pack already opened", max_lv:"Maximum level reached", ad_wait:"Next video in {n} s", daily_used:"Already claimed today", no_bal:"Not enough balance – top up first", pack_bronze:"Bronze pack", pack_silber:"Silver pack", pack_gold:"Gold pack", pack_start:"Starter pack",
+    d_start:"Free once – your first figure", d_bronze:"The entry – chance of Frost", d_silber:"Better chances of Lava and Gold", d_gold:"No Classic – highest Epic chance",
+  },
+  de:{
+    nav_collection:"Sammlung", nav_packs:"Packs", nav_diamonds:"Diamanten", nav_wallet:"Wallet", nav_events:"Events",
+    ev_title:"Events", tournaments:"Turniere", news:"News", no_events:"Gerade läuft kein Turnier – schau bald wieder vorbei!", no_news:"Noch keine News.",
+    ends_in:"Endet in {t}", starts_in:"Startet in {t}", ended:"Beendet", your_rank:"Dein Platz", not_ranked:"Noch nicht platziert – {m}, um mitzumachen!", prizes:"Preise",
+    upcoming:"Demnächst", results:"Ergebnisse", rank_short:"#{n}", admin_open:"⚙️ Admin-Panel", d_short:"T", h_short:"Std", m_short:"Min",
+    next_credit:"Nächste Gutschrift in", earned_round:"Verdient diese Runde", profit_day:"Profit pro Tag", collection:"Sammlung",
+    eligible:"✓ Du nimmst an der Auszahlung teil", not_eligible:"ⓘ Sieh dir heute mindestens {n} Werbung an, sonst verfällt der Ertrag dieser Runde.",
+    no_figs:"Noch keine Figuren", no_figs_txt:"Öffne dein kostenloses Start-Pack und hol dir deinen ersten Kumpel.", to_packs:"Zu den Packs",
+    mine:"Meine", jackpot:"Jackpot", per_day:"/Tag", jp_info:"4 Extra-Figuren – sie zählen nicht zur Sammlung und können in jedem Pack stecken.",
+    packs_sub:"Jedes Pack enthält eine zufällige Figur. Doppelte Figur: 40 % der Diamanten zurück.", free:"GRATIS", open_free:"Gratis öffnen", open:"Öffnen",
+    dup_back:"Doppelt: +{n} 💎 zurück", get_diamonds:"Diamanten bekommst du unter <a href=\"#belohnungen\" style=\"color:var(--accent);font-weight:600\">Diamanten</a>.",
+    diamonds:"Diamanten", you_have:"Du hast", watch_video:"Video ansehen", watched_today:"heute {n} gesehen", watch:"Ansehen",
+    daily_bonus:"Tagesbonus", daily_sub:"Jeden Tag abholen, die Serie wächst", done:"Erledigt", day:"Tag",
+    invite:"Freunde einladen", invite_sub:"+{p} % von allem, was deine Freunde verdienen · +{n} 💎 für euch beide", invite_btn:"Einladen",
+    invited:"Eingeladen", ref_earned:"Werbebonus verdient", copy:"Kopieren", copied:"Link kopiert", ref_wait:"Dein Einladungslink erscheint, sobald der Bot online ist.",
+    share_text:"Sammle mit mir Crypto Buddies – wir bekommen beide {n} 💎!",
+    wallet_sub:"Automatische Auszahlung alle 4 Stunden", balance:"Guthaben", auto_off:"Automatische Auszahlung ist aus – dein Guthaben wird angespart",
+    paid_next:"Wird bei der nächsten Runde ausgezahlt", payout_from:"Auszahlung ab {n} – bis dahin wird angespart", auto_payout:"Automatisch auszahlen",
+    deposit_only:"Einzahlung (nur für Diamanten)", next_round:"Nächste Runde in", credited_last:"Gutgeschrieben letzte Runde", paid_total:"Bisher ausgezahlt",
+    how_get:"So bekommst du dein Geld", step1:"Öffne einmal <b>@CryptoBot</b> in Telegram und drücke Start.", step2:"Fertig. Ab {n} kommt die Auszahlung automatisch in {a} dorthin.",
+    wallet_note:"Alle 4 Stunden wird der Ertrag deiner Figuren gutgeschrieben. Voraussetzung: mindestens {n} Werbung in den letzten 24 Stunden.",
+    payouts:"Auszahlungen", st_done:"Gesendet", st_pending:"In Bearbeitung", st_failed:"Fehlgeschlagen", leaderboard:"Rangliste",
+    jp_title:"Jackpot-Figuren", jp_sub:"4 Extra-Figuren mit festem Tagesertrag. Sie können in jedem Bronze-, Silber- oder Gold-Pack stecken.", in_coll:"✓ In deiner Sammlung",
+    coll_done:"🏆 Sammlung komplett", coll_done_txt:"Dein Bonus von {n} $ wurde gutgeschrieben.", coll_bonus:"Sammel-Bonus", coll_sub:"Sammle alle {t} Figuren – noch {r}.",
+    buy_title:"Diamanten kaufen", buy_sub:"{n} 💎 = 1 $ · bezahlt wird zuerst aus der Einzahlung, dann aus dem Guthaben", deposit:"Einzahlung", earned_bal:"Guthaben (verdient)",
+    topup:"Aufladen", topup_sub:"Per @CryptoBot – bezahlen mit USDT oder TRX. Aufgeladenes Geld kann nur für Diamanten verwendet werden.", open_inv:"{n} offen", pay:"Bezahlen", check_pay:"Zahlung prüfen",
+    level:"Stufe", next_level:"nächste Stufe +{n}", max_level:"Maximale Stufe erreicht", pulled:"{n}× gezogen", close:"Schließen",
+    all_collected:"🏆 Alle {t} gesammelt! +{n} $ Bonus.", jp_hit:"🎰 JACKPOT! {n} $ pro Tag – für immer.", dup:"Doppelt! +{n} 💎 zurück.", new_fig:"Neu in deiner Sammlung!", next:"Weiter", per_day_long:"pro Tag",
+    ad_cancel:"Werbung abgebrochen", only_tg:"In Telegram öffnen", only_tg_txt:"Crypto Buddies läuft in Telegram. Öffne den Bot und tippe auf „Spielen“.", no_ad:"Gerade kein Video verfügbar – versuch es gleich nochmal", lv_toast:"+{n} Stufe{s} · 💎 −{c}", daily_toast:"Tagesbonus: +{n} 💎", bought:"+{n} 💎 gekauft",
+    after_pay:"Nach dem Bezahlen auf „Zahlung prüfen“ tippen", updated:"Aktualisiert", thanks:"Danke! Diamanten kommen gleich.", conn_fail:"Verbindung fehlgeschlagen", server_err:"Serverfehler",
+    not_enough:"Nicht genug Diamanten", starter_used:"Start-Pack schon geöffnet", max_lv:"Maximale Stufe erreicht", ad_wait:"Nächste Werbung in {n} s", daily_used:"Heute schon abgeholt", no_bal:"Nicht genug Guthaben – lade zuerst auf", pack_bronze:"Bronze-Pack", pack_silber:"Silber-Pack", pack_gold:"Gold-Pack", pack_start:"Start-Pack",
+    d_start:"Einmalig gratis – deine erste Figur", d_bronze:"Der Einstieg – Chance auf Frost", d_silber:"Bessere Chancen auf Lava und Gold", d_gold:"Kein Klassik – höchste Epic-Chance",
+  },
+};
+const SPECIES = {
+  en:{pinguin:"Penguin",fuchs:"Fox",igel:"Hedgehog",eule:"Owl",schildi:"Turtle",axolotl:"Axolotl",katze:"Cat",hase:"Bunny",baer:"Bear",panda:"Panda",frosch:"Frog",koala:"Koala",hamster:"Hamster",biber:"Beaver",krake:"Octopus",hund:"Dog",loewe:"Lion",affe:"Monkey",faultier:"Sloth",drache:"Dragon"},
+  de:{pinguin:"Pinguin",fuchs:"Fuchs",igel:"Igel",eule:"Eule",schildi:"Schildi",axolotl:"Axolotl",katze:"Katze",hase:"Hase",baer:"Bär",panda:"Panda",frosch:"Frosch",koala:"Koala",hamster:"Hamster",biber:"Biber",krake:"Krake",hund:"Hund",loewe:"Löwe",affe:"Affe",faultier:"Faultier",drache:"Drache"},
+};
+const EDITION_NAMES = {en:{klassik:"Classic",frost:"Frost",lava:"Lava",gold:"Gold",kosmos:"Cosmos"}, de:{klassik:"Klassik",frost:"Frost",lava:"Lava",gold:"Gold",kosmos:"Kosmos"}};
+const RARITY = {en:{klassik:"Common",frost:"Rare",lava:"Very rare",gold:"Legendary",kosmos:"Epic"}, de:{klassik:"Normal",frost:"Selten",lava:"Sehr selten",gold:"Legendär",kosmos:"Epic"}};
+let LANG = (()=>{ try{ return localStorage.getItem("kk_lang") || "en"; }catch(e){ return "en"; } })();
+const T = (k, v={})=> (I18N[LANG][k] ?? I18N.en[k] ?? k).replace(/\{(\w+)\}/g, (_,x)=> v[x] ?? "");
+const LOC = ()=> LANG==="de" ? "de-AT" : "en-US";
+const NAME = id=> BY[id].name.split(" ")[0] + " " + SPECIES[LANG][BY[id].species];
+const EDN = ed=> EDITION_NAMES[LANG][ed];
+const RAR = ed=> RARITY[LANG][ed];
+function applyStatic(){
+  document.documentElement.lang = LANG;
+  document.querySelectorAll("[data-i18n]").forEach(el=> el.textContent = T(el.dataset.i18n));
+  const sel = document.getElementById("langSel"); if(sel) sel.value = LANG;
+}
+
+/* ================================================================ Daten & Regeln (wie game.py) */
+const CHARS = window.KUMPELS || [];
+const BY = Object.fromEntries(CHARS.map(c=>[c.id,c]));
+const MAX_LEVEL = 500, PERIOD = 4*3600, AD_COOLDOWN = 45, DUP_REFUND = 0.4, DAILY_D = 1, REF_D = 5, AD_D = 2, DIA_PER_USDT = 100;
+const EDITION_USD = {klassik:[0.001,0.002], frost:[0.004,0.008], lava:[0.015,0.03], gold:[0.06,0.12], kosmos:[0.3,0.5]};
+const COST_F = {klassik:1, frost:1.25, lava:1.5, gold:2, kosmos:2.5};
+const ED_COLOR = {klassik:"#94a3b8", frost:"#38bdf8", lava:"#f43f5e", gold:"#f59e0b", kosmos:"#a855f7"};
+const PACKS = {
+  start: {price:0,   odds:{klassik:100}},
+  bronze:{price:40,  odds:{klassik:75,frost:20,lava:4,gold:0.9,kosmos:0.1}},
+  silber:{price:100, odds:{klassik:45,frost:35,lava:15,gold:4.8,kosmos:0.2}},
+  gold:  {price:200, odds:{frost:50,lava:35,gold:14.7,kosmos:0.3}},
+};
+const JACKPOTS = [{char:"pablo_panda",usd:5,every:525000},{char:"kasimir_krake",usd:10,every:1400000},{char:"ludwig_loewe",usd:25,every:4925000},{char:"dorian_drache",usd:50,every:19882000}];  // "every" nur für die Demo
+const BONUS = 1000;
+const JP = Object.fromEntries(JACKPOTS.map(j=>[j.char,j]));
+const REGULAR = CHARS.filter(c=>!JP[c.id]).map(c=>c.id);
+const daily = (id,l)=>{ if(JP[id]) return Math.round(JP[id].usd*(1+0.05*(l-1))*1e6)/1e6; const [lo,hi]=EDITION_USD[BY[id].edition]; return Math.round((lo+(hi-lo)*((BY[id].no-1)%20)/19)*(1+0.05*(l-1))*1e6)/1e6; };
+const lvCost = (id,l)=> Math.ceil((2+0.15*l)*COST_F[BY[id].edition]);
+const adReward = n=> AD_D;
+
+/* ================================================================ Verbindung */
+const tg = window.Telegram && window.Telegram.WebApp;
+const LIVE = !!(tg && tg.initData);
+
+async function server(action, body={}){
+  const r = await fetch("/api/"+action,{method:"POST",headers:{"Content-Type":"application/json","X-Init-Data":tg.initData},body:JSON.stringify(body)});
+  const j = await r.json().catch(()=>({detail:T("server_err")}));
+  if(!r.ok) throw new Error(typeof j.detail==="string" ? j.detail : T("server_err"));
+  return j;
+}
+
+const call = (a,b)=> server(a,b);
+
+/* ================================================================ Werbung */
+// 1. AdsGram (Reward-Block)  2. Monetag als Ersatz, wenn AdsGram nichts zeigen kann  3. Demo
+const waitFor = (fn, ms=4000)=> new Promise(res=>{ const t0=Date.now(); (function poll(){ const v=fn(); if(v || Date.now()-t0>ms) return res(v); setTimeout(poll,150); })(); });
+async function showRewardedAd(){
+  const ag = S && S.adsgram_block_id, mt = S && S.monetag_zone;
+  if(!ag && !mt){ toast(T("no_ad")); return false; }   // kein Werbeanbieter eingetragen
+  if(ag){
+    const A = await waitFor(()=>window.Adsgram);
+    if(A){
+      try{ await A.init({blockId: String(ag)}).show(); return true; }
+      catch(r){ if(r && r.error === false){ toast(T("ad_cancel")); return false; } }   // selbst abgebrochen → kein Ersatz
+    }
+  }
+  if(mt){
+    const show = await waitFor(()=>window["show_"+mt]);
+    if(show){ try{ await show(); return true; }catch(e){} }
+  }
+  toast(T("no_ad")); return false;
+}
+let packsOpened = 0;
+async function maybeInterstitial(){
+  if(!S || !S.adsgram_int_id || ++packsOpened % 3) return;   // nur jedes 3. Pack
+  try{ if(window.Adsgram) await window.Adsgram.init({blockId: String(S.adsgram_int_id)}).show(); }catch(e){}
+}
+function loadAds(){
+  if(!S) return;
+  if((S.adsgram_block_id || S.adsgram_int_id) && !document.getElementById("sadjs")){
+    const sc=document.createElement("script"); sc.id="sadjs"; sc.src="https://sad.adsgram.ai/js/sad.min.js"; document.head.appendChild(sc);
+  }
+  if(S.monetag_zone && !document.getElementById("mtjs")){
+    const sc=document.createElement("script"); sc.id="mtjs"; sc.src="https://libtl.com/sdk.js";
+    sc.dataset.zone=S.monetag_zone; sc.dataset.sdk="show_"+S.monetag_zone; document.head.appendChild(sc);
+  }
+}
+
+/* ================================================================ Hilfen */
+let S=null, offset=0, tab="sammlung", filter="meine";
+const $ = id=>document.getElementById(id);
+const now = ()=> Date.now()/1000 - offset;
+const fmt = n=> n>=1e9 ? (n/1e9).toLocaleString(LOC(),{maximumFractionDigits:2})+(LANG==="de"?" Mrd":"B") : n>=1e6 ? (n/1e6).toLocaleString(LOC(),{maximumFractionDigits:2})+(LANG==="de"?" Mio":"M") : Math.floor(n).toLocaleString(LOC());
+const usd = (n,d=2)=> n.toLocaleString(LOC(),{minimumFractionDigits:d,maximumFractionDigits:d});
+const money = n=> LANG==="de" ? usd(n, n<1 ? 4 : 2) + " $" : "$" + usd(n, n<1 ? 4 : 2);
+const pct = w=> String(w).replace(".", LANG==="de"?",":".") + " %";
+const hms = s=>{ s=Math.max(0,Math.floor(s)); return [Math.floor(s/3600),Math.floor(s%3600/60),s%60].map((x,i)=>i?String(x).padStart(2,"0"):x).join(":"); };
+const esc = s=>String(s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+const bg = id=> `background:linear-gradient(160deg,${BY[id].bg[0]},${BY[id].bg[1]})`;
+const owned = ()=> Object.fromEntries(S.kumpels.map(k=>[k.id,k]));
+const totalDaily = ()=> S.kumpels.reduce((a,k)=>a+k.daily,0);
+const packName = k=> T("pack_"+k);
+const packBox = k=> k==="start" ? T("free") : packName(k).split(/[- ]/)[0].toUpperCase();
+function toast(m){ const t=$("toast"); t.textContent=m; t.classList.add("on"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("on"),2300); }
+function haptic(k){ try{ tg.HapticFeedback.notificationOccurred(k) }catch(e){} }
+function apply(st){ S=st; offset = Date.now()/1000 - st.server_time; loadAds(); render(); }
+
+async function act(action, body={}){
+  try{ const st = await call(action, body); apply(st); haptic("success"); return st.result; }
+  catch(e){ haptic("error"); toast(e.message); return null; }
+}
+
+/* ================================================================ Ansichten */
+function roundCard(){
+  const live = S.round_points + totalDaily()/86400*Math.max(0, now()-S.server_time);
+  return `<div class="round">
+    <div class="lbl">${T("next_credit")}</div>
+    <div class="big num" id="cd">${hms(S.round_end-now())}</div>
+    <div class="row3">
+      <div><span class="lbl">${T("earned_round")}</span><b class="num" id="rp">${money(live)}</b></div>
+      <div><span class="lbl">${T("profit_day")}</span><b class="num">${money(totalDaily())}</b></div>
+      <div><span class="lbl">${T("collection")}</span><b class="num">${S.collected}/${S.collection_total}</b></div>
+    </div>
+    ${S.eligible ? `<div class="hint ok">${T("eligible")}</div>` : `<div class="hint">${T("not_eligible",{n:S.min_ads_24h})}</div>`}
+  </div>`;
+}
+
+const VIEWS = {
+  sammlung(){
+    const own = owned();
+    if(!S.kumpels.length) return roundCard() + `<div class="card empty"><div style="font-size:44px">🎁</div><h2 style="margin:6px 0 0">${T("no_figs")}</h2>
+      <p>${T("no_figs_txt")}</p><button class="btn" data-go="packs">${T("to_packs")}</button></div>`;
+    const jpOwned = JACKPOTS.filter(j=>own[j.char]).length;
+    const list = filter==="meine" ? S.kumpels.slice().sort((a,b)=>b.daily-a.daily).map(k=>k.id)
+               : filter==="jackpot" ? JACKPOTS.map(j=>j.char) : REGULAR;
+    const card = id=>{
+      const k = own[id], c = BY[id], jp = JP[id];
+      if(k) return `<button class="fig ${jp?"isjp":""}" data-open="${id}"><div class="art" style="${bg(id)}">${c.svg}<span class="lv">Lv ${k.level}</span><span class="dot" style="background:${jp?"#f2c94c":ED_COLOR[c.edition]}"></span></div>
+                     <div class="meta"><div class="nm">${NAME(id)}</div><div class="pr">+${money(k.daily)}${T("per_day")}</div></div></button>`;
+      return `<div class="fig locked"><div class="art">${c.svg}</div><div class="meta"><div class="nm">${jp?T("jackpot"):"#"+c.no} ???</div><div class="pr" style="color:var(--faint)">${jp?money(jp.usd)+T("per_day"):EDN(c.edition)}</div></div></div>`;
+    };
+    return roundCard() + bonusCard() + `<div class="seg">
+        <button data-f="meine" class="${filter==="meine"?"on":""}">${T("mine")}</button>
+        <button data-f="alle" class="${filter==="alle"?"on":""}">${T("collection")} ${S.collected}/${S.collection_total}</button>
+        <button data-f="jackpot" class="${filter==="jackpot"?"on":""}">${T("jackpot")} ${jpOwned}/4</button></div>
+      ${filter==="jackpot"?`<p class="sub">${T("jp_info")}</p>`:""}
+      <div class="grid">${list.map(card).join("")}</div>`;
+  },
+  packs(){
+    const keys = (S.starter_available?["start"]:[]).concat(["bronze","silber","gold"]);
+    return `<h2>Packs</h2><p class="sub">${T("packs_sub")}</p>` +
+      keys.map(k=>{
+        const P = PACKS[k], ok = k==="start" || S.diamonds>=P.price;
+        return `<div class="card pack"><div class="box ${k}">${packBox(k)}</div><div class="info">
+          <div class="t">${packName(k)}</div><div class="d">${T("d_"+k)}</div>
+          <div class="odds">${Object.entries(P.odds).map(([e,w])=>`<i style="width:${w}%;background:${ED_COLOR[e]}"></i>`).join("")}</div>
+          <div class="legend">${Object.entries(P.odds).map(([e,w])=>`<span style="--c:${ED_COLOR[e]}">${EDN(e)} ${pct(w)}</span>`).join("")}</div>
+          <button class="btn" style="margin-top:12px" data-pack="${k}" ${ok?"":"disabled"}>${k==="start"?T("open_free"):`${T("open")} · 💎 ${P.price}`}</button>
+          ${k!=="start"?`<div style="font-size:11.5px;color:var(--muted);margin-top:6px;text-align:center">${T("dup_back",{n:S.dup_refund[k]})}</div>`:""}
+        </div></div>`;
+      }).join("") + jackpotCard() + (S.diamonds<40 ? `<p class="sub" style="text-align:center">${T("get_diamonds")}</p>` : "");
+  },
+  belohnungen(){
+    const wait = Math.max(0, S.next_ad_at - now());
+    const done = Math.min(S.streak,7), nextDay = S.daily_available ? Math.min(S.streak+1,7) : 0;
+    const link = S.ref_link || "";
+    let html = `<h2>${T("diamonds")}</h2><p class="sub">${T("you_have")} <b class="num">💎 ${fmt(S.diamonds)}</b></p>
+      <div class="card reward"><div class="ic">▶</div><div class="tx"><b>${T("watch_video")}</b><span>+${S.next_ad_reward} 💎 · ${T("watched_today",{n:S.ads_today})}</span></div>
+        <button class="btn" id="adBtn" data-ad ${wait>0?"disabled":""}>${wait>0?`<span class="num" id="adWait">${Math.ceil(wait)} s</span>`:T("watch")}</button></div>
+      <div class="card"><div class="reward"><div class="ic">📅</div><div class="tx"><b>${T("daily_bonus")}</b><span>${T("daily_sub")}</span></div>
+        <button class="btn" data-daily ${S.daily_available?"":"disabled"}>${S.daily_available?`+${DAILY_D*nextDay} 💎`:T("done")}</button></div>
+        <div class="days">${[1,2,3,4,5,6,7].map(d=>`<div class="${d<=done?"done":""} ${d===nextDay&&d>done?"next":""}">${T("day")} ${d}<b>${DAILY_D*d}</b></div>`).join("")}</div></div>
+      <div class="card"><div class="reward"><div class="ic">👥</div><div class="tx"><b>${T("invite")}</b><span>${T("invite_sub",{p:Math.round(S.ref_share*100), n:S.ref_diamonds})}</span></div>
+        <button class="btn ghost" data-share ${link?"":"disabled"}>${T("invite_btn")}</button></div>
+        ${link ? `<div class="reflink"><input id="refInput" readonly value="${esc(link)}"><button class="btn ghost" data-copy>${T("copy")}</button></div>`
+               : `<p class="sub" style="margin:10px 0 0">${T("ref_wait")}</p>`}
+        <div class="kv" style="margin-top:10px"><span>${T("invited")}</span><b class="num">${S.friends}</b></div>
+        <div class="kv"><span>${T("ref_earned")}</span><b class="num">${money(S.ref_earned)}</b></div></div>`;
+    if(S.shop_enabled) html += shopSection();
+    return html;
+  },
+  events(){
+    const T_ = S.tournaments || {live:[],upcoming:[],finished:[]};
+    const left = sec=>{ sec=Math.max(0,sec); const d=Math.floor(sec/86400), h=Math.floor(sec%86400/3600), m=Math.floor(sec%3600/60);
+      return d ? `${d} ${T("d_short")} ${h} ${T("h_short")}` : h ? `${h} ${T("h_short")} ${m} ${T("m_short")}` : `${m} ${T("m_short")}`; };
+    const score = (t,v)=> t.unit==="usd" ? money(v) : fmt(v);
+    const prize = (t,p)=> t.prize_type==="diamonds" ? `${fmt(p)} 💎` : money(p);
+    const hint = {profit:"collect profit", packs:"open a pack", ads:"watch a video", invites:"invite a friend"};
+    const hintDe = {profit:"sammle Profit", packs:"öffne ein Pack", ads:"sieh ein Video", invites:"lade einen Freund ein"};
+    const card = t=>`<div class="card tour">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div><div class="tname">🏆 ${esc(t.name)}</div>
+        <div class="sub" style="margin:2px 0 0">${esc(t.metric_label)}</div></div>
+        <span class="tleft num" data-end="${t.end}">${T("ends_in",{t:left(t.end-now())})}</span></div>
+      <div class="prizes">${t.prizes.slice(0,5).map((p,i)=>`<span>${["🥇","🥈","🥉"][i]||"#"+(i+1)} ${prize(t,p)}</span>`).join("")}${t.prizes.length>5?`<span>+${t.prizes.length-5}</span>`:""}</div>
+      <div class="me">${t.me ? `${T("your_rank")}: <b>#${t.me.rank}</b> · ${score(t,t.me.score)}` : T("not_ranked",{m:(LANG==="de"?hintDe:hint)[t.metric]})}</div>
+      ${t.top.length?`<div style="margin-top:6px">${t.top.map((e,i)=>`<div class="lb"><span class="rk">${i+1}</span><span class="n">${esc(e.name)}${e.user_id===S.user_id?" ⭐":""}</span><span class="num" style="color:var(--muted)">${score(t,e.score)}</span></div>`).join("")}</div>`:""}
+    </div>`;
+    let h = `<h2>${T("ev_title")}</h2>`;
+    if(S.is_admin) h += `<a class="btn ghost" href="/admin" style="text-decoration:none;margin-bottom:12px">${T("admin_open")}</a>`;
+    h += T_.live.length ? T_.live.map(card).join("") : `<div class="card sub" style="margin:0 0 12px">${T("no_events")}</div>`;
+    if(T_.upcoming.length) h += `<h2>${T("upcoming")}</h2>` + T_.upcoming.map(t=>`<div class="card"><div class="tname">${esc(t.name)}</div>
+      <div class="sub" style="margin:2px 0 0">${esc(t.metric_label)} · ${T("starts_in",{t:left(t.start-now())})}</div>
+      <div class="prizes">${t.prizes.slice(0,3).map((p,i)=>`<span>${["🥇","🥈","🥉"][i]} ${prize(t,p)}</span>`).join("")}</div></div>`).join("");
+    if(T_.finished.length) h += `<h2>${T("results")}</h2>` + T_.finished.map(t=>`<div class="card"><div class="tname">${esc(t.name)} <span class="sub">· ${T("ended")}</span></div>
+      ${(t.results||[]).slice(0,5).map(r=>`<div class="lb"><span class="rk">${r.rank}</span><span class="n">${esc(r.name||"Player")}</span><span class="num" style="color:var(--muted)">${prize(t,r.prize)}</span></div>`).join("")}</div>`).join("");
+    h += `<h2>${T("news")}</h2>` + ((S.news||[]).length ? S.news.map(n=>`<div class="card news"><div class="tname">${n.pinned?"📌 ":""}${esc(n.title)}</div>
+      <div class="sub" style="margin:2px 0 8px">${new Date(n.created*1000).toLocaleDateString(LOC(),{day:"numeric",month:"short",year:"numeric"})}</div>
+      <div class="nbody">${esc(n.body)}</div></div>`).join("") : `<div class="card sub">${T("no_news")}</div>`);
+    return h;
+  },
+  wallet(){
+    const p = Math.min(100, S.usdt/S.min_payout*100), lr = S.last_round;
+    const status = {done:T("st_done"), pending:T("st_pending"), failed:T("st_failed")};
+    return `<h2>Wallet</h2><p class="sub">${T("wallet_sub")}</p>
+      <div class="card"><div style="color:var(--muted);font-size:13px">${T("balance")}</div>
+        <div class="bal num">${money(S.usdt)}</div>
+        <div class="bar"><i style="width:${p}%"></i></div>
+        <div style="font-size:12.5px;color:var(--muted)">${!S.autopayout?T("auto_off"):S.usdt>=S.min_payout?T("paid_next"):T("payout_from",{n:money(S.min_payout)})}</div>
+        <div class="kv" style="margin-top:12px;align-items:center"><span style="color:var(--ink);font-weight:600">${T("auto_payout")}</span><button class="switch ${S.autopayout?"on":""}" data-auto aria-label="${T("auto_payout")}"></button></div>
+        ${S.deposit>0?`<div class="kv"><span>${T("deposit_only")}</span><b class="num">${money(S.deposit)}</b></div>`:""}</div>
+      <div class="card">
+        <div class="kv"><span>${T("next_round")}</span><b class="num" id="cd2">${hms(S.round_end-now())}</b></div>
+        <div class="kv"><span>${T("profit_day")}</span><b class="num">${money(totalDaily())}</b></div>
+        <div class="kv"><span>${T("credited_last")}</span><b class="num">${lr&&lr.usdt?money(lr.usdt):"–"}</b></div>
+        <div class="kv"><span>${T("paid_total")}</span><b class="num">${money(S.usdt_paid)}</b></div></div>
+      <div class="card"><b style="font-size:14px">${T("how_get")}</b>
+        <ol class="steps"><li>${T("step1")}</li><li>${T("step2",{n:money(S.min_payout), a:S.payout_asset||"TRX"})}</li></ol>
+        <p style="color:var(--muted);font-size:12px;margin:10px 0 0">${T("wallet_note",{n:S.min_ads_24h})}</p></div>
+      ${S.payouts.length?`<h2>${T("payouts")}</h2><div class="card">${S.payouts.map(x=>`<div class="kv"><span>${new Date(x.created*1000).toLocaleString(LOC(),{dateStyle:"short",timeStyle:"short"})}</span><b class="num">${money(x.amount)}${x.asset_amount?` · ${usd(x.asset_amount)} ${x.asset}`:""} · ${status[x.status]||x.status}</b></div>`).join("")}</div>`:""}
+      <h2>${T("leaderboard")}</h2><div class="card">${S.top.map((x,i)=>`<div class="lb"><span class="rk">${i+1}</span><span class="n">${esc(x.name)}</span><span class="num" style="color:var(--muted)">${money(x.score)}</span></div>`).join("")}</div>`;
+  },
+};
+
+function render(){
+  applyStatic();
+  if(!S) return;
+  $("view").innerHTML = VIEWS[tab]();
+  $("hDia").textContent = fmt(S.diamonds);
+  $("hUsd").textContent = usd(S.usdt);
+  document.querySelectorAll("nav a").forEach(a=>{
+    a.classList.toggle("act", a.dataset.t===tab);
+    a.querySelector(".badge")?.remove();
+    if((a.dataset.t==="belohnungen" && S.daily_available) || (a.dataset.t==="packs" && S.starter_available) || (a.dataset.t==="events" && (S.tournaments||{}).live?.length)) a.insertAdjacentHTML("beforeend",'<span class="badge"></span>');
+  });
+  if($("sheet").classList.contains("on") && openId) openDetail(openId);
+}
+
+function jackpotCard(){
+  return `<h2>${T("jp_title")}</h2><p class="sub">${T("jp_sub")}</p>
+    <div class="card jp">${JACKPOTS.map(j=>`<div class="jprow"><div class="jpart" style="${bg(j.char)}">${BY[j.char].svg}</div>
+      <div style="flex:1;min-width:0"><b>${NAME(j.char)}</b><span>${owned()[j.char]?T("in_coll"):T("jackpot")}</span></div>
+      <div class="jpusd num">${money(j.usd).replace(/[.,]0+(?=\D*$)/,"")}<small>${T("per_day")}</small></div></div>`).join("")}</div>`;
+}
+function bonusCard(){
+  const p = S.collected/S.collection_total*100, amount = S.collection_bonus.toLocaleString(LOC());
+  if(S.collection_bonus_paid) return `<div class="card bonus done"><b>${T("coll_done")}</b><span>${T("coll_done_txt",{n:amount})}</span></div>`;
+  return `<div class="card bonus"><div style="display:flex;justify-content:space-between;align-items:baseline"><b>${T("coll_bonus")}</b><b class="num" style="color:#b7791f">${LANG==="de"?amount+" $":"$"+amount}</b></div>
+    <span>${T("coll_sub",{t:S.collection_total, r:S.collection_total-S.collected})}</span>
+    <div class="bar" style="margin:10px 0 0"><i style="width:${p}%;background:linear-gradient(90deg,#f6c445,#d69e2e)"></i></div></div>`;
+}
+
+function shopSection(){
+  const total = S.deposit + S.usdt, P = S.diamonds_per_usdt;
+  const pk = [1,5,10,25].map(u=>({d:u*P, u}));
+  return `<h2>${T("buy_title")}</h2><p class="sub">${T("buy_sub",{n:P})}</p>
+    <div class="card"><div class="kv"><span>${T("deposit")}</span><b class="num">${money(S.deposit)}</b></div>
+      <div class="kv"><span>${T("earned_bal")}</span><b class="num">${money(S.usdt)}</b></div></div>
+    <div class="shopgrid">${pk.map(x=>`<button class="shopitem" data-buydia="${x.d}" ${total+1e-9>=x.u?"":"disabled"}>
+      <b class="num">💎 ${fmt(x.d)}</b><span>${money(x.u)}</span></button>`).join("")}</div>
+    <h2>${T("topup")}</h2><p class="sub">${T("topup_sub")}</p>
+    <div class="card"><div class="chiprow">${S.topup_amounts.map(a=>`<button class="btn ghost" data-topup="${a}">+${money(a).replace(/[.,]00(?=\D*$)/,"")}</button>`).join("")}</div>
+      ${S.topups_open.length?`<div style="margin-top:12px">${S.topups_open.map(x=>`<div class="kv"><span>${T("open_inv",{n:money(x.amount)})}</span><a href="${esc(x.url)}" data-tglink style="color:var(--accent);font-weight:600;text-decoration:none">${T("pay")}</a></div>`).join("")}
+        <button class="btn ghost" data-topcheck style="margin-top:8px">${T("check_pay")}</button></div>`:""}</div>`;
+}
+
+/* Figur-Detail */
+let openId = null;
+function openDetail(id){
+  openId = id;
+  const k = owned()[id], c = BY[id]; if(!k) return;
+  const max = k.level>=MAX_LEVEL;
+  let c10=0,l=k.level,n=0; while(n<10 && l<MAX_LEVEL){ c10+=lvCost(id,l); l++; n++; }
+  let cm=0; l=k.level; n=0; while(l<MAX_LEVEL && cm+lvCost(id,l)<=S.diamonds){ cm+=lvCost(id,l); l++; n++; }
+  $("sheet").innerHTML = `<div class="grab"></div><button class="x" data-close aria-label="${T("close")}">✕</button>
+    <div class="detail-art" style="${bg(id)}">${c.svg}</div>
+    <div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:21px;font-weight:800;letter-spacing:-.3px">${NAME(id)}</div>
+      <span class="tag" style="background:${ED_COLOR[c.edition]}">${EDN(c.edition)} · ${RAR(c.edition)}</span>${JP[id]?`<span class="tag jptag">JACKPOT</span>`:""}</div>
+      <div style="text-align:right;color:var(--muted);font-size:12px">#${c.no}<br>${T("pulled",{n:k.copies})}</div></div>
+    <div class="stats">
+      <div class="stat"><span>${T("level")}</span><b class="num">${k.level}<small style="color:var(--faint);font-weight:600;font-size:13px"> / ${MAX_LEVEL}</small></b>
+        <div class="bar" style="margin:8px 0 0;height:5px"><i style="width:${k.level/MAX_LEVEL*100}%;background:var(--accent)"></i></div></div>
+      <div class="stat"><span>${T("profit_day")}</span><b class="num">${money(k.daily)}</b>${max?"":`<div style="font-size:12px;color:var(--green);font-weight:600;margin-top:2px">${T("next_level",{n:money(k.next_daily-k.daily)})}</div>`}</div>
+    </div>
+    ${max ? `<button class="btn" disabled>${T("max_level")}</button>` : `<div class="btn-row">
+      <button class="btn" data-lv="1" ${S.diamonds>=k.level_cost?"":"disabled"}>+1<small>💎 ${k.level_cost}</small></button>
+      <button class="btn" data-lv="10" ${S.diamonds>=c10?"":"disabled"}>+10<small>💎 ${fmt(c10)}</small></button>
+      <button class="btn ghost" data-lv="500" ${n?"":"disabled"}>Max${n?` +${n}`:""}<small>💎 ${fmt(cm)}</small></button></div>`}
+    <p style="text-align:center;color:var(--muted);font-size:12.5px;margin:12px 0 0">${T("you_have")} 💎 ${fmt(S.diamonds)}</p>`;
+  $("sheet").classList.add("on"); $("scrim").classList.add("on");
+}
+function closeSheet(){ openId=null; $("sheet").classList.remove("on"); $("scrim").classList.remove("on"); }
+
+/* Pack öffnen */
+async function openPack(pack){
+  const rv = $("reveal");
+  rv.innerHTML = `<div class="rv-pack box ${pack}" style="display:grid;place-items:center;font-size:15px">${packBox(pack)}</div>`;
+  rv.classList.add("on");
+  const [res] = await Promise.all([act("pack",{pack}), new Promise(r=>setTimeout(r,1400))]);
+  if(!res){ rv.classList.remove("on"); return; }
+  const c = BY[res.char], col = ED_COLOR[c.edition];
+  const note = res.collection_bonus ? T("all_collected",{t:S.collection_total, n:S.collection_bonus.toLocaleString(LOC())})
+             : res.jackpot && !res.duplicate ? T("jp_hit",{n:JP[c.id].usd}) : res.duplicate ? T("dup",{n:res.refund}) : T("new_fig");
+  rv.innerHTML = `<div style="position:relative;display:flex;flex-direction:column;align-items:center">
+    <div class="rv-glow" style="background:${col}"></div>
+    <div class="rv-card" id="rvc"><div class="art" style="${bg(c.id)}">${c.svg}</div><div class="m">
+      <span class="tag" style="background:${col}">${EDN(c.edition)} · ${RAR(c.edition)}</span>${res.jackpot?`<span class="tag jptag">JACKPOT</span>`:""}<b>${NAME(c.id)}</b>
+      <span style="color:var(--green);font-weight:600;font-size:13px">+${money(owned()[c.id].daily)} ${T("per_day_long")}</span></div></div>
+    <div class="rv-note">${note}</div>
+    <button class="btn" data-closerv>${T("next")}</button></div>`;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>$("rvc").classList.add("on")));
+  if(["gold","kosmos"].includes(c.edition)) haptic("success");
+}
+
+/* ================================================================ Live-Werte */
+function tick(){
+  if(!S) return;
+  if(now() >= S.round_end){ call("state").then(apply).catch(()=>{}); S.round_end += PERIOD; }
+  const left = hms(S.round_end-now());
+  if($("cd")) $("cd").textContent = left;
+  if($("cd2")) $("cd2").textContent = left;
+  if($("rp")) $("rp").textContent = money(S.round_points + totalDaily()/86400*Math.max(0, now()-S.server_time));
+  document.querySelectorAll("[data-end]").forEach(el=>{ const sec=+el.dataset.end-now(); if(sec<=0){ el.textContent=T("ended"); return; }
+    const d=Math.floor(sec/86400), h=Math.floor(sec%86400/3600), m=Math.floor(sec%3600/60);
+    el.textContent = T("ends_in",{t: d?`${d} ${T("d_short")} ${h} ${T("h_short")}`: h?`${h} ${T("h_short")} ${m} ${T("m_short")}`:`${m} ${T("m_short")}`}); });
+  const b = $("adBtn");
+  if(b){ const w = S.next_ad_at-now(); if(w>0){ b.disabled=true; b.innerHTML=`<span class="num">${Math.ceil(w)} s</span>`; } else if(b.disabled){ b.disabled=false; b.textContent=T("watch"); } }
+}
+
+/* ================================================================ Sprache wechseln */
+$("langSel").addEventListener("change", async e=>{
+  LANG = e.target.value === "de" ? "de" : "en";
+  try{ localStorage.setItem("kk_lang", LANG); }catch(_){}
+  render();
+  if(LIVE){ try{ apply(await server("lang",{lang:LANG})); }catch(_){} }
+});
+
+/* ================================================================ Klicks */
+document.addEventListener("click", async e=>{
+  const tl = e.target.closest("[data-tglink]");
+  if(tl){ e.preventDefault(); tg ? tg.openTelegramLink(tl.href) : window.open(tl.href); return; }
+  const el = e.target.closest("button,[data-open],[data-go]"); if(!el || el.disabled) return;
+  const d = el.dataset;
+  if(d.open) return openDetail(d.open);
+  if(d.go){ location.hash = d.go; return; }
+  if(d.f){ filter = d.f; return render(); }
+  if(d.pack) return openPack(d.pack);
+  if("close" in d) return closeSheet();
+  if("closerv" in d){ $("reveal").classList.remove("on"); maybeInterstitial(); return; }
+  if(d.lv){ const r = await act("levelup",{char:openId, steps:+d.lv}); if(r) toast(T("lv_toast",{n:r.levels, s:r.levels>1?(LANG==="de"?"n":"s"):"", c:fmt(r.spent)})); return; }
+  if("ad" in d){ el.disabled=true; if(await showRewardedAd()){ const r = await act("ad"); if(r) toast(`+${r.diamonds} 💎`); } else render(); return; }
+  if("daily" in d){ const r = await act("daily"); if(r) toast(T("daily_toast",{n:r.diamonds})); return; }
+  if("share" in d){
+    const url = "https://t.me/share/url?url="+encodeURIComponent(S.ref_link)+"&text="+encodeURIComponent(T("share_text",{n:S.ref_diamonds}));
+    tg ? tg.openTelegramLink(url) : window.open(url); return;
+  }
+  if("copy" in d){
+    const inp = $("refInput");
+    try{ await navigator.clipboard.writeText(S.ref_link); }catch(_){ inp.select(); try{ document.execCommand("copy"); }catch(__){} }
+    toast(T("copied")); return;
+  }
+  if(d.buydia){ const r = await act("buy_diamonds",{diamonds:+d.buydia}); if(r) toast(T("bought",{n:fmt(r.diamonds)})); return; }
+  if(d.topup){
+    try{ const {url} = await server("topup",{amount:+d.topup}); tg.openTelegramLink(url); toast(T("after_pay")); setTimeout(()=>call("state").then(apply),1000); }
+    catch(err){ toast(err.message); } return;
+  }
+  if("topcheck" in d){ await act("topup_check"); toast(T("updated")); return; }
+  if("auto" in d){ await act("autopayout",{on:!S.autopayout}); return; }
+  if(d.buy){
+    try{ const {link} = await server("buy",{package:d.buy}); tg.openInvoice(link, st=>{ if(st==="paid"){ toast(T("thanks")); setTimeout(()=>call("state").then(apply),1500); } }); }
+    catch(err){ toast(err.message); }
+  }
+});
+$("scrim").addEventListener("click", closeSheet);
+
+function route(){ const h=location.hash.slice(1); tab = VIEWS[h] ? h : "sammlung"; closeSheet(); render(); window.scrollTo(0,0); }
+window.addEventListener("hashchange", route);
+
+/* ================================================================ Start */
+if(tg){ try{ tg.ready(); tg.expand(); tg.setHeaderColor && tg.setHeaderColor("#f5f6f8"); tg.setBackgroundColor && tg.setBackgroundColor("#f5f6f8"); }catch(e){} }
+applyStatic();
+if(!LIVE){   // außerhalb von Telegram geöffnet
+  $("view").innerHTML = `<div class="card empty" style="margin-top:24px"><div style="font-size:44px">📱</div><h2 style="margin:6px 0 0">${T("only_tg")}</h2><p>${T("only_tg_txt")}</p></div>`;
+  throw new Error("not in Telegram");
+}
+call("state").then(st=>{
+  if(LIVE && st.lang && st.lang !== LANG){ LANG = st.lang; try{ localStorage.setItem("kk_lang", LANG); }catch(_){} }   // Server-Einstellung gilt
+  apply(st); route();
+}).catch(e=>{ $("view").innerHTML = `<div class="card" style="margin-top:16px">${T("conn_fail")}: ${esc(e.message)}</div>`; });
+setInterval(tick, 1000);
+setInterval(()=>{ call("state").then(apply).catch(()=>{}); }, 60000);
+</script>
+</body>
+</html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<link rel="icon" href="/logo.png">
+<title>Crypto Buddies · Admin</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f6f8;--surface:#fff;--ink:#0f172a;--ink2:#334155;--muted:#64748b;--faint:#94a3b8;--line:#e8eaee;--soft:#f1f3f6;
+  --accent:#5b4bdb;--accent-soft:#eeebff;--green:#16a34a;--red:#dc2626;--amber:#d97706;--shadow:0 1px 2px rgba(15,23,42,.04),0 4px 16px rgba(15,23,42,.05)}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:14.5px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px 40px}
+header{position:sticky;top:0;z-index:5;background:rgba(245,246,248,.92);backdrop-filter:blur(10px)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;height:56px;padding-bottom:0}
+.brand{font-weight:800;font-size:17px;display:flex;gap:8px;align-items:center}
+.brand i{width:26px;height:26px;border-radius:8px;background:var(--ink);color:#fff;display:grid;place-items:center;font-style:normal;font-size:13px}
+.tabs{display:flex;gap:4px;background:var(--soft);border-radius:12px;padding:3px;margin:6px 0 16px;overflow-x:auto}
+.tabs button{flex:1;border:0;background:none;padding:9px 10px;border-radius:9px;font:inherit;font-weight:600;font-size:13px;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tabs button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+h2{font-size:17px;font-weight:800;margin:22px 0 10px}
+.card{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);padding:16px;margin-bottom:12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.kpi{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:12px 14px}
+.kpi span{display:block;color:var(--muted);font-size:12px;font-weight:500}
+.kpi b{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums}
+.kpi.warn b{color:var(--red)} .kpi.good b{color:var(--green)}
+.kv{display:flex;justify-content:space-between;padding:9px 0;border-top:1px solid var(--line)}
+.kv:first-child{border-top:0}.kv span{color:var(--muted)}.kv b{font-weight:600}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:13px}
+th,td{text-align:right;padding:8px 6px;border-bottom:1px solid var(--line)}th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:600;font-size:12px}
+label{display:block;font-weight:600;font-size:12.5px;color:var(--ink2);margin:12px 0 5px}
+input,select,textarea{width:100%;border:1px solid var(--line);border-radius:11px;padding:10px 12px;font:inherit;color:var(--ink);background:var(--soft)}
+textarea{min-height:90px;resize:vertical}
+.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+input,select{min-width:0}
+@media(max-width:480px){.row.dates{grid-template-columns:1fr}}
+.check{display:flex;align-items:center;gap:8px;margin-top:12px;font-weight:500}
+.check input{width:auto}
+.btn{border:0;border-radius:12px;padding:12px 16px;font:inherit;font-weight:700;background:var(--accent);color:#fff;cursor:pointer;width:100%;margin-top:14px}
+.btn.small{width:auto;padding:7px 12px;font-size:12.5px;margin:0}
+.btn.ghost{background:var(--soft);color:var(--ink)}
+.btn.danger{background:#fee2e2;color:var(--red)}
+.btn:disabled{opacity:.4}
+.item{border-top:1px solid var(--line);padding:12px 0}.item:first-child{border-top:0;padding-top:0}
+.item .t{font-weight:700}.item .m{color:var(--muted);font-size:12.5px;margin:3px 0 8px}
+.item p{margin:4px 0;color:var(--ink2);white-space:pre-wrap}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+.pill{display:inline-block;font-size:11px;font-weight:700;border-radius:7px;padding:2px 8px;margin-left:6px;vertical-align:1px}
+.pill.live{background:#dcfce7;color:var(--green)}.pill.soon{background:var(--accent-soft);color:var(--accent)}
+.pill.done{background:var(--soft);color:var(--muted)}.pill.cancel{background:#fee2e2;color:var(--red)}
+.hint{color:var(--muted);font-size:12.5px;margin-top:6px}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,10px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-weight:600;opacity:0;transition:.2s;pointer-events:none;z-index:9}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.denied{text-align:center;padding:60px 20px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header><div class="wrap"><div class="brand"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="28" height="28" aria-hidden="true"> <defs> <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c6cff"/><stop offset="1" stop-color="#4a36c9"/></linearGradient> <radialGradient id="coin" cx=".38" cy=".32" r=".8"><stop offset="0" stop-color="#ffe9a3"/><stop offset=".55" stop-color="#fbbf24"/><stop offset="1" stop-color="#d48806"/></radialGradient> <radialGradient id="glow" cx=".5" cy=".45" r=".5"><stop offset="0" stop-color="#fff" stop-opacity=".28"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient> </defs> <rect width="512" height="512" rx="116" fill="url(#bg)"/> <circle cx="256" cy="262" r="210" fill="url(#glow)"/> <circle cx="150" cy="150" r="52" fill="#e3a414"/><circle cx="150" cy="150" r="28" fill="#fde68a"/> <circle cx="362" cy="150" r="52" fill="#e3a414"/><circle cx="362" cy="150" r="28" fill="#fde68a"/> <circle cx="256" cy="276" r="150" fill="#c27c05"/> <circle cx="256" cy="268" r="150" fill="url(#coin)"/> <circle cx="256" cy="268" r="124" fill="none" stroke="#f59e0b" stroke-width="10" opacity=".55"/> <ellipse cx="208" cy="256" rx="20" ry="24" fill="#1f1a3d"/><ellipse cx="304" cy="256" rx="20" ry="24" fill="#1f1a3d"/> <circle cx="215" cy="247" r="7.5" fill="#fff"/><circle cx="311" cy="247" r="7.5" fill="#fff"/> <ellipse cx="172" cy="300" rx="20" ry="12" fill="#f472b6" opacity=".55"/><ellipse cx="340" cy="300" rx="20" ry="12" fill="#f472b6" opacity=".55"/> <path d="M226 304q30 30 60 0" stroke="#1f1a3d" stroke-width="12" fill="none" stroke-linecap="round"/> <path d="M168 196a118 118 0 0 1 60-50" stroke="#fff" stroke-width="14" fill="none" stroke-linecap="round" opacity=".6"/> <path d="M412 92l7 20 20 7-20 7-7 20-7-20-20-7 20-7z" fill="#fff" opacity=".9"/> <path d="M96 410l5 13 13 5-13 5-5 13-5-13-13-5 13-5z" fill="#fff" opacity=".7"/> </svg> <span>Crypto Buddies · Admin</span></div><button class="btn small ghost" id="reload">↻ Aktualisieren</button></div></header>
+<div class="wrap">
+  <div class="tabs" id="tabs">
+    <button data-tab="overview" class="on">Übersicht</button>
+    <button data-tab="players">Spieler</button>
+    <button data-tab="news">News</button>
+    <button data-tab="tours">Turniere</button>
+    <button data-tab="message">Nachricht</button>
+    <button data-tab="admins">Admins</button>
+  </div>
+  <main id="view"></main>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const tg = window.Telegram && window.Telegram.WebApp;
+const $ = id => document.getElementById(id);
+let tab = "overview", METRICS = {};
+const esc = s => String(s ?? "").replace(/[&<>"]/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+const usd = n => (n ?? 0).toLocaleString("de-AT", {minimumFractionDigits:2, maximumFractionDigits:2}) + " $";
+const usd4 = n => (n ?? 0).toLocaleString("de-AT", {minimumFractionDigits:n<1?4:2, maximumFractionDigits:n<1?4:2}) + " $";
+const num = n => (n ?? 0).toLocaleString("de-AT");
+const dt = t => new Date(t*1000).toLocaleString("de-AT", {dateStyle:"short", timeStyle:"short"});
+function toast(m){ const t=$("toast"); t.textContent=m; t.classList.add("on"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("on"),2600); }
+
+async function api(action, body={}){
+  const r = await fetch("/admin/api/"+action, {method:"POST", headers:{"Content-Type":"application/json","X-Init-Data":tg?.initData||""}, body:JSON.stringify(body)});
+  const j = await r.json().catch(()=>({detail:"Serverfehler"}));
+  if(!r.ok) throw new Error(j.detail || "Fehler");
+  return j;
+}
+async function run(fn){ try{ await fn(); }catch(e){ toast(e.message); } }
+
+/* ------------------------------------------------------------ Übersicht */
+async function overview(){
+  const s = await api("stats");
+  const cb = s.cryptobot;
+  const cbHtml = !cb ? "Kein Token" : cb.error ? `<span style="color:var(--red)">${esc(cb.error)}</span>` :
+    (Object.entries(cb).map(([k,v])=>`${num(v)} ${k}`).join(" · ") || "leer");
+  const loss = s.credited_7d > s.revenue_7d;
+  $("view").innerHTML = `
+    <div class="kpis">
+      <div class="kpi"><span>Spieler gesamt</span><b>${num(s.users)}</b></div>
+      <div class="kpi"><span>Aktiv (24 h)</span><b>${num(s.active_24h)}</b></div>
+      <div class="kpi"><span>Neu (24 h)</span><b>${num(s.new_24h)}</b></div>
+      <div class="kpi"><span>Videos (24 h)</span><b>${num(s.ads_24h)}</b></div>
+      <div class="kpi"><span>Packs (24 h)</span><b>${num(s.packs_24h)}</b></div>
+      <div class="kpi"><span>Offene Auszahlungen</span><b>${num(s.pending)}</b></div>
+    </div>
+    <h2>Geld</h2>
+    <div class="kpis">
+      <div class="kpi"><span>Werbeeinnahmen 7 Tage (geschätzt)</span><b>${usd(s.revenue_7d)}</b></div>
+      <div class="kpi ${loss?"warn":"good"}"><span>Gutgeschrieben 7 Tage</span><b>${usd(s.credited_7d)}</b></div>
+      <div class="kpi"><span>Guthaben aller Spieler</span><b>${usd(s.owed)}</b></div>
+      <div class="kpi"><span>Bisher ausgezahlt</span><b>${usd(s.paid_total)}</b></div>
+    </div>
+    ${loss?`<div class="card" style="background:#fff7ed;margin-top:12px">⚠️ In den letzten 7 Tagen wurde mehr gutgeschrieben, als die Werbung (geschätzt) eingebracht hat.</div>`:""}
+    <div class="card" style="margin-top:12px">
+      <div class="kv"><span>CryptoBot-Guthaben</span><b>${cbHtml}</b></div>
+      <div class="kv"><span>Auszahlung</span><b>${esc(s.settings.payout_mode)} · ${esc(s.settings.payout_asset)}</b></div>
+      <div class="kv"><span>Werbung</span><b>${esc(s.settings.ads)} · eCPM ${s.settings.ecpm} $</b></div>
+      <div class="kv"><span>Diamanten-Shop</span><b>${s.settings.shop?"an":"aus"}</b></div>
+    </div>
+    <h2>Letzte Runden</h2>
+    <div class="card"><table><tr><th>Ende</th><th>Videos</th><th>Einnahmen</th><th>Gutgeschr.</th><th>Spieler</th></tr>
+      ${s.rounds.map(r=>`<tr><td>${dt(r.closed_at)}</td><td>${num(r.views)}</td><td>${usd(r.revenue)}</td><td>${usd(r.paid)}</td><td>${num(r.players)}</td></tr>`).join("") || `<tr><td colspan="5" style="text-align:center;color:var(--muted)">Noch keine Runde abgeschlossen</td></tr>`}
+    </table></div>`;
+}
+
+/* ------------------------------------------------------------ News */
+async function news(){
+  const {news} = await api("news_list");
+  $("view").innerHTML = `
+    <div class="card"><b>Neue News</b>
+      <div class="row"><div><label>Titel (EN)</label><input id="nTe" placeholder="Season 1 is live"></div><div><label>Titel (DE)</label><input id="nTd" placeholder="Saison 1 ist da"></div></div>
+      <label>Text (EN)</label><textarea id="nBe"></textarea>
+      <label>Text (DE)</label><textarea id="nBd"></textarea>
+      <div class="hint">Mindestens eine Sprache ausfüllen. Fehlt eine, sehen Spieler die andere.</div>
+      <label class="check"><input type="checkbox" id="nPin"> Oben anheften</label>
+      <label class="check"><input type="checkbox" id="nBc" checked> Zusätzlich als Bot-Nachricht an alle Spieler schicken</label>
+      <button class="btn" id="nSave">Veröffentlichen</button></div>
+    <h2>Veröffentlicht</h2>
+    <div class="card">${news.map(n=>`<div class="item"><div class="t">${n.pinned?"📌 ":""}${esc(n.title_de||n.title_en)}</div>
+      <div class="m">${dt(n.created)}${n.broadcast?" · an alle gesendet":""}</div><p>${esc(n.body_de||n.body_en)}</p>
+      <div class="actions"><button class="btn small ghost" data-pin="${n.id}" data-v="${n.pinned?0:1}">${n.pinned?"Lösen":"Anheften"}</button>
+      <button class="btn small danger" data-delnews="${n.id}">Löschen</button></div></div>`).join("") || `<div class="hint">Noch keine News.</div>`}</div>`;
+  $("nSave").onclick = ()=>run(async()=>{
+    const bc = $("nBc").checked;
+    if(bc && !await confirmBox("Die News geht als Nachricht an ALLE Spieler. Fortfahren?")) return;
+    await api("news_create", {title_en:$("nTe").value, title_de:$("nTd").value, body_en:$("nBe").value, body_de:$("nBd").value, pinned:$("nPin").checked, broadcast:bc});
+    toast(bc ? "Veröffentlicht – Versand läuft" : "Veröffentlicht"); news();
+  });
+}
+
+/* ------------------------------------------------------------ Turniere */
+const toLocal = d => new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+async function tours(){
+  const r = await api("tour_list"); METRICS = r.metrics;
+  const now = new Date(); now.setSeconds(0,0);
+  const end = new Date(now.getTime() + 7*86400000);
+  const pill = t => t.status==="cancelled" ? `<span class="pill cancel">abgebrochen</span>` : t.status==="finished" ? `<span class="pill done">beendet</span>` :
+                   t.start*1000 > Date.now() ? `<span class="pill soon">geplant</span>` : `<span class="pill live">läuft</span>`;
+  const fmtScore = (t,v) => t.unit==="usd" ? usd(v) : num(v);
+  const fmtPrize = (t,p) => t.prize_type==="diamonds" ? `${num(p)} 💎` : usd(p);
+  $("view").innerHTML = `
+    <div class="card"><b>Neues Turnier</b>
+      <div class="row"><div><label>Name (EN)</label><input id="tNe" placeholder="Video Week"></div><div><label>Name (DE)</label><input id="tNd" placeholder="Video-Woche"></div></div>
+      <label>Wertung – wer gewinnt?</label>
+      <select id="tM">${Object.entries(METRICS).map(([k,m])=>`<option value="${k}">${m.de}</option>`).join("")}</select>
+      <div class="row dates"><div><label>Start</label><input type="datetime-local" id="tS" value="${toLocal(now)}"></div><div><label>Ende</label><input type="datetime-local" id="tE" value="${toLocal(end)}"></div></div>
+      <div class="presets">${[["1 Tag",1],["3 Tage",3],["1 Woche",7],["2 Wochen",14]].map(([l,d])=>`<button class="btn small ghost" data-dur="${d}">${l}</button>`).join("")}</div>
+      <div class="row"><div><label>Preis-Art</label><select id="tPT"><option value="diamonds">Diamanten</option><option value="usd">Dollar (Guthaben)</option></select></div>
+        <div><label>Preise für Platz 1, 2, 3 …</label><input id="tP" value="500, 250, 100" placeholder="500, 250, 100"></div></div>
+      <div class="hint" id="tSum"></div>
+      <label class="check"><input type="checkbox" id="tBc" checked> Start als Bot-Nachricht an alle Spieler ankündigen</label>
+      <button class="btn" id="tSave">Turnier anlegen</button></div>
+    <h2>Turniere</h2>
+    ${r.tournaments.map(t=>`<div class="card"><div class="t" style="font-weight:700">${esc(t.name_de||t.name_en)}${pill(t)}</div>
+      <div class="hint">${esc(t.metric_label)} · ${dt(t.start)} – ${dt(t.end)} · ${num(t.players)} Teilnehmer</div>
+      <div class="hint">Preise: ${t.prizes.map((p,i)=>`#${i+1} ${fmtPrize(t,p)}`).join(" · ")}</div>
+      ${(t.results||t.top).length?`<table style="margin-top:10px"><tr><th>Platz</th><th>Spieler</th><th>Punkte</th>${t.results?"<th>Preis</th>":""}</tr>
+        ${(t.results||t.top.slice(0,5)).map((e,i)=>`<tr><td>${e.rank||i+1}</td><td style="text-align:left">${esc(e.name||"Player")}</td><td>${fmtScore(t,e.score)}</td>${t.results?`<td>${fmtPrize(t,e.prize)}</td>`:""}</tr>`).join("")}</table>`:""}
+      ${t.status==="open"?`<div class="actions" style="margin-top:10px"><button class="btn small ghost" data-endnow="${t.id}">Jetzt beenden &amp; Preise vergeben</button><button class="btn small danger" data-cancel="${t.id}">Abbrechen</button></div>`:""}
+    </div>`).join("") || `<div class="card hint">Noch keine Turniere.</div>`}`;
+  const sum = ()=>{ const p=$("tP").value.split(",").map(x=>parseFloat(x)).filter(x=>!isNaN(x)); const total=p.reduce((a,b)=>a+b,0);
+    $("tSum").textContent = `${p.length} Plätze · Preise gesamt: ${$("tPT").value==="diamonds" ? num(total)+" 💎" : usd(total)}`; };
+  $("tP").oninput = sum; $("tPT").onchange = sum; sum();
+  document.querySelectorAll("[data-dur]").forEach(b=>b.onclick=()=>{ const s=new Date($("tS").value); $("tE").value = toLocal(new Date(s.getTime()+(+b.dataset.dur)*86400000)); });
+  $("tSave").onclick = ()=>run(async()=>{
+    const bc=$("tBc").checked;
+    if(bc && !await confirmBox("Die Ankündigung geht an ALLE Spieler. Fortfahren?")) return;
+    await api("tour_create", {name_en:$("tNe").value, name_de:$("tNd").value, metric:$("tM").value,
+      start:new Date($("tS").value).getTime()/1000, end:new Date($("tE").value).getTime()/1000,
+      prize_type:$("tPT").value, prizes:$("tP").value.split(","), broadcast:bc});
+    toast("Turnier angelegt"); tours();
+  });
+}
+
+/* ------------------------------------------------------------ Nachricht an alle */
+function message(){
+  $("view").innerHTML = `<div class="card"><b>Nachricht an alle Spieler</b>
+    <div class="hint">Jeder Spieler bekommt die Nachricht in seiner Sprache. Fehlt eine Sprache, wird die andere geschickt. Mit „Spielen“-Knopf.</div>
+    <label>Text (EN)</label><textarea id="mE"></textarea>
+    <label>Text (DE)</label><textarea id="mD"></textarea>
+    <button class="btn" id="mSend">An alle senden</button></div>`;
+  $("mSend").onclick = ()=>run(async()=>{
+    if(!await confirmBox("Wirklich an ALLE Spieler senden?")) return;
+    const r = await api("broadcast", {text_en:$("mE").value, text_de:$("mD").value});
+    toast(`Versand an ${num(r.recipients)} Spieler gestartet`); $("mE").value=$("mD").value="";
+  });
+}
+
+
+/* ------------------------------------------------------------ Spieler */
+let CHARS = null, curUser = null;
+const ED_DE = {klassik:"Klassik", frost:"Frost", lava:"Lava", gold:"Gold", kosmos:"Kosmos"};
+async function players(){
+  $("view").innerHTML = `<div class="card"><b>Spieler suchen</b>
+      <div class="row" style="grid-template-columns:minmax(0,1fr) auto;margin-top:10px"><input id="uq" placeholder="@nutzername, Name oder Telegram-ID"><button class="btn small" id="uGo">Suchen</button></div>
+      <div id="uRes" style="margin-top:10px"></div></div><div id="uProf"></div>`;
+  const search = ()=>run(async()=>{
+    const {users} = await api("user_search", {q:$("uq").value});
+    $("uRes").innerHTML = users.map(u=>`<div class="item" style="cursor:pointer" data-user="${u.id}"><div class="t">${esc(u.name||"–")} ${u.username?`<span class="hint">@${esc(u.username)}</span>`:""}</div>
+      <div class="m">ID ${u.id} · 💎 ${num(u.diamonds)} · ${usd(u.usdt)} · zuletzt ${u.last_seen?dt(u.last_seen):"–"}</div></div>`).join("") || `<div class="hint">Keine Treffer.</div>`;
+  });
+  $("uGo").onclick = search; $("uq").onkeydown = e=>{ if(e.key==="Enter") search(); };
+  search();
+  if(curUser) openUser(curUser);
+}
+async function openUser(id){
+  curUser = id;
+  if(!CHARS) CHARS = (await api("characters")).characters;
+  const {user:u, kumpels} = await api("user_get", {id});
+  const opts = Object.keys(ED_DE).map(ed=>`<optgroup label="${ED_DE[ed]}">${CHARS.filter(c=>c.edition===ed && !c.jackpot).map(c=>`<option value="${c.id}">#${c.no} ${esc(c.name)}</option>`).join("")}</optgroup>`).join("")
+             + `<optgroup label="Jackpot">${CHARS.filter(c=>c.jackpot).map(c=>`<option value="${c.id}">${esc(c.name)} (Jackpot)</option>`).join("")}</optgroup>`;
+  $("uProf").innerHTML = `<h2>${esc(u.name||"Spieler")} ${u.username?`<span class="hint">@${esc(u.username)}</span>`:""}</h2>
+    <div class="card">
+      <div class="kv"><span>Telegram-ID</span><b>${u.id}</b></div>
+      <div class="kv"><span>Diamanten</span><b>💎 ${num(u.diamonds)}</b></div>
+      <div class="kv"><span>Guthaben (auszahlbar)</span><b>${usd(u.usdt)}</b></div>
+      <div class="kv"><span>Einzahlung (nur Diamanten)</span><b>${usd(u.deposit)}</b></div>
+      <div class="kv"><span>Ausgezahlt</span><b>${usd(u.usdt_paid)}</b></div>
+      <div class="kv"><span>Kumpels · Freunde</span><b>${kumpels.length} · ${u.friends}</b></div>
+      <div class="kv"><span>Dabei seit · zuletzt</span><b>${dt(u.created)} · ${u.last_seen?dt(u.last_seen):"–"}</b></div>
+      ${u.blocked?`<div class="hint" style="color:var(--red)">Hat den Bot blockiert</div>`:""}${u.is_admin?`<div class="hint">🔑 Admin</div>`:""}
+    </div>
+    <div class="card"><b>Guthaben ändern</b>
+      <div class="row"><div><label>Was</label><select id="bF"><option value="diamonds">Diamanten</option><option value="usdt">Guthaben ($, auszahlbar)</option><option value="deposit">Einzahlung ($, nur Diamanten)</option></select></div>
+        <div><label>Wie</label><select id="bM"><option value="add">hinzufügen / abziehen (−)</option><option value="set">auf Wert setzen</option></select></div></div>
+      <label>Betrag</label><input id="bV" type="number" step="any" placeholder="z. B. 100 oder -50">
+      <label class="check"><input type="checkbox" id="bN" checked> Spieler benachrichtigen (nur bei Erhöhung)</label>
+      <button class="btn" id="bSave">Übernehmen</button></div>
+    <div class="card"><b>Kumpel vergeben</b>
+      <label>Figur</label><select id="gC">${opts}</select>
+      <label>Stufe (1–500)</label><input id="gL" type="number" min="1" max="500" value="1">
+      <div class="hint">Hat der Spieler die Figur schon, wird ihre Stufe auf diesen Wert gesetzt.</div>
+      <label class="check"><input type="checkbox" id="gN" checked> Spieler benachrichtigen</label>
+      <button class="btn" id="gSave">Vergeben</button></div>
+    <div class="card"><b>Kumpels des Spielers</b>
+      ${kumpels.map(k=>{ const c=CHARS.find(x=>x.id===k.id)||{name:k.id,edition:""}; return `<div class="item" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <div><div class="t">${esc(c.name)}${c.jackpot?" 🎰":""}</div><div class="m" style="margin:2px 0 0">${ED_DE[c.edition]||""} · Stufe ${k.level} · ${usd4(k.daily)}/Tag · ${k.copies}× gezogen</div></div>
+        <button class="btn small danger" data-rmk="${k.id}">Entfernen</button></div>`; }).join("") || `<div class="hint">Noch keine.</div>`}</div>
+    ${u.log.length?`<div class="card"><b>Admin-Änderungen</b>${u.log.map(l=>`<div class="item"><div class="m" style="margin:0">${dt(l.ts)} · ${esc(l.action)} · von ${l.admin_id}</div><div class="hint">${esc(l.details||"")}</div></div>`).join("")}</div>`:""}`;
+  $("bSave").onclick = ()=>run(async()=>{
+    const v = $("bV").value; if(v==="") throw new Error("Betrag fehlt");
+    const r = await api("user_balance", {id, field:$("bF").value, mode:$("bM").value, value:+v, notify:$("bN").checked});
+    toast(`Geändert: ${num(r.old)} → ${num(r.new)}`); openUser(id);
+  });
+  $("gSave").onclick = ()=>run(async()=>{
+    await api("user_grant", {id, char:$("gC").value, level:+$("gL").value, notify:$("gN").checked});
+    toast("Kumpel vergeben"); openUser(id);
+  });
+  $("uProf").scrollIntoView({behavior:"smooth"});
+}
+
+/* ------------------------------------------------------------ Admins */
+let ME = null;
+async function admins(){
+  ME = ME || await api("me");
+  const r = await api("admins_list");
+  $("view").innerHTML = `
+    <div class="card"><b>So funktioniert der Zugang</b>
+      <ol style="margin:8px 0 0;padding-left:18px;color:var(--ink2);line-height:1.6">
+        <li>Die Person öffnet den Bot einmal mit <b>/start</b> (sonst kennt der Bot ihren Nutzernamen nicht).</li>
+        <li>Du trägst hier ihren <b>@Nutzernamen</b> ein.</li>
+        <li>Sie bekommt eine Nachricht und öffnet das Panel mit <b>/admin</b> im Bot (oder in der App unter Events).</li>
+      </ol>
+      <div class="hint" style="margin-top:8px">Jeder Aufruf wird über die Telegram-Anmeldung geprüft – der Link allein reicht nicht. Admins können alles außer Admins verwalten; das dürfen nur Besitzer.</div></div>
+    ${ME.owner ? `<div class="card"><b>Admin hinzufügen</b>
+      <div class="row" style="grid-template-columns:minmax(0,1fr) auto;margin-top:10px"><input id="aU" placeholder="@nutzername"><button class="btn small" id="aAdd">Hinzufügen</button></div></div>` : ""}
+    <h2>Besitzer</h2><div class="card">${r.owners.map(o=>`<div class="item"><div class="t">${o.username?"@"+esc(o.username):"ID "+o.user_id} <span class="pill live">Besitzer</span></div><div class="m" style="margin:0">ID ${o.user_id} · festgelegt über ADMIN_ID</div></div>`).join("") || `<div class="hint">Keine – ADMIN_ID in den Einstellungen eintragen.</div>`}</div>
+    <h2>Admins</h2><div class="card">${r.admins.map(a=>`<div class="item" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <div><div class="t">${a.username?"@"+esc(a.username):esc(a.name||"")}</div><div class="m" style="margin:2px 0 0">ID ${a.user_id} · seit ${dt(a.created)}</div></div>
+      ${ME.owner?`<button class="btn small danger" data-rmadmin="${a.user_id}">Entfernen</button>`:""}</div>`).join("") || `<div class="hint">Noch keine weiteren Admins.</div>`}</div>`;
+  if(ME.owner) $("aAdd").onclick = ()=>run(async()=>{ const x = await api("admin_add", {username:$("aU").value}); toast(`${x.name||"Nutzer"} ist jetzt Admin`); admins(); });
+}
+
+/* ------------------------------------------------------------ Steuerung */
+function confirmBox(msg){ return new Promise(res=>{ try{ if(tg && tg.showConfirm) return tg.showConfirm(msg, ok=>res(!!ok)); res(window.confirm(msg)); }catch(e){ res(false); } }); }
+const VIEWS = {overview, players, news, tours, message, admins};
+function show(t){ tab=t; document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on", b.dataset.tab===t));
+  $("view").innerHTML = `<div class="hint" style="padding:20px 0">Lädt …</div>`;
+  run(async()=>{ try{ await VIEWS[t](); }catch(e){ if(/Kein Admin|Anmeldung|öffnen/.test(e.message)) $("view").innerHTML=`<div class="denied">🔒 ${esc(e.message)}</div>`; else throw e; } }); }
+$("tabs").onclick = e=>{ const b=e.target.closest("button"); if(b) show(b.dataset.tab); };
+$("reload").onclick = ()=>show(tab);
+document.addEventListener("click", e=>{
+  const it=e.target.closest("[data-user]"); if(it) return run(()=>openUser(+it.dataset.user));
+  const b=e.target.closest("button"); if(!b) return; const d=b.dataset;
+  if(d.rmk) run(async()=>{ if(!await confirmBox("Kumpel beim Spieler entfernen?")) return; await api("user_kumpel_remove",{id:curUser, char:d.rmk}); toast("Entfernt"); openUser(curUser); });
+  if(d.rmadmin) run(async()=>{ if(!await confirmBox("Admin-Rechte entziehen?")) return; await api("admin_remove",{user_id:+d.rmadmin}); toast("Entfernt"); admins(); });
+  if(d.delnews) run(async()=>{ if(!await confirmBox("News löschen?")) return; await api("news_delete",{id:+d.delnews}); toast("Gelöscht"); news(); });
+  if(d.pin) run(async()=>{ await api("news_pin",{id:+d.pin, pinned:d.v==="1"}); news(); });
+  if(d.endnow) run(async()=>{ if(!await confirmBox("Turnier jetzt beenden und Preise vergeben?")) return; await api("tour_end_now",{id:+d.endnow}); toast("Beendet, Preise vergeben"); tours(); });
+  if(d.cancel) run(async()=>{ if(!await confirmBox("Turnier abbrechen? Es werden keine Preise vergeben.")) return; await api("tour_cancel",{id:+d.cancel}); toast("Abgebrochen"); tours(); });
+});
+if(tg){ try{ tg.ready(); tg.expand(); }catch(e){} }
+if(!tg || !tg.initData) $("view").innerHTML = `<div class="denied">🔒 Öffne das Panel im Bot mit /admin.</div>`;
+else show("overview");
+</script>
+</body>
+</html>
