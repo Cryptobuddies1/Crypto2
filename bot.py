@@ -1209,6 +1209,10 @@ def check_config() -> None:
         problems.append("WEBAPP_URL fehlt oder ist nicht https – die Mini App lässt sich nicht öffnen")
     if not (ADSGRAM_BLOCK_ID or MONETAG_ZONE_ID):
         problems.append("Kein Werbeanbieter (ADSGRAM_BLOCK_ID / MONETAG_ZONE_ID) – Videos und Diamanten sind gesperrt")
+    if ADSGRAM_BLOCK_ID and not ADSGRAM_BLOCK_ID.strip().isdigit():
+        problems.append(f"ADSGRAM_BLOCK_ID muss eine reine Zahl sein (z. B. 12345), eingetragen ist '{ADSGRAM_BLOCK_ID}' – AdsGram wird übersprungen")
+    if ADSGRAM_INTERSTITIAL_ID and not (ADSGRAM_INTERSTITIAL_ID.startswith("int-") and ADSGRAM_INTERSTITIAL_ID[4:].isdigit()):
+        problems.append(f"ADSGRAM_INTERSTITIAL_ID muss wie 'int-12345' aussehen, eingetragen ist '{ADSGRAM_INTERSTITIAL_ID}'")
     if not ADMIN_ID:
         problems.append("ADMIN_ID fehlt – kein Admin-Panel und keine Warnungen. Schick dem Bot /id und trag die Zahl ein")
     if PAYOUT_MODE in ("live", "test") and not CRYPTOPAY_TOKEN:

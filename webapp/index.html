@@ -371,8 +371,9 @@ const call = (a,b)=> server(a,b);
 /* ================================================================ Werbung */
 // 1. AdsGram (Reward-Block)  2. Monetag als Ersatz, wenn AdsGram nichts zeigen kann  3. Demo
 const waitFor = (fn, ms=4000)=> new Promise(res=>{ const t0=Date.now(); (function poll(){ const v=fn(); if(v || Date.now()-t0>ms) return res(v); setTimeout(poll,150); })(); });
+const okAg = (id, intPrefix)=> !!id && (intPrefix ? /^int-\d+$/ : /^\d+$/).test(String(id).trim());
 async function showRewardedAd(){
-  const ag = S && S.adsgram_block_id, mt = S && S.monetag_zone;
+  const ag = S && okAg(S.adsgram_block_id) ? String(S.adsgram_block_id).trim() : "", mt = S && S.monetag_zone;
   if(!ag && !mt){ toast(T("no_ad")); return false; }   // kein Werbeanbieter eingetragen
   if(ag){
     const A = await waitFor(()=>window.Adsgram);
@@ -389,12 +390,12 @@ async function showRewardedAd(){
 }
 let packsOpened = 0;
 async function maybeInterstitial(){
-  if(!S || !S.adsgram_int_id || ++packsOpened % 3) return;   // nur jedes 3. Pack
-  try{ if(window.Adsgram) await window.Adsgram.init({blockId: String(S.adsgram_int_id)}).show(); }catch(e){}
+  if(!S || !okAg(S.adsgram_int_id, true) || ++packsOpened % 3) return;   // nur jedes 3. Pack
+  try{ if(window.Adsgram) await window.Adsgram.init({blockId: String(S.adsgram_int_id).trim()}).show(); }catch(e){}
 }
 function loadAds(){
   if(!S) return;
-  if((S.adsgram_block_id || S.adsgram_int_id) && !document.getElementById("sadjs")){
+  if((okAg(S.adsgram_block_id) || okAg(S.adsgram_int_id, true)) && !document.getElementById("sadjs")){
     const sc=document.createElement("script"); sc.id="sadjs"; sc.src="https://sad.adsgram.ai/js/sad.min.js"; document.head.appendChild(sc);
   }
   if(S.monetag_zone && !document.getElementById("mtjs")){
