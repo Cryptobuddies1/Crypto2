@@ -160,6 +160,21 @@ nav a .badge{position:absolute;top:6px;left:calc(50% + 8px);width:8px;height:8px
 .scrim.on{opacity:1;pointer-events:auto}
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;background:var(--surface);border-radius:24px 24px 0 0;max-width:560px;margin:0 auto;transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1);padding:10px 18px calc(20px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
 .sheet.on{transform:none}
+.earn-btn{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 14px;padding:12px 14px;border:0;border-radius:16px;cursor:pointer;text-align:left;color:#fff;font:inherit;background:linear-gradient(120deg,#0e7490,#6d28d9)}
+.earn-btn .ei{font-size:22px}.earn-btn .et{flex:1;display:flex;flex-direction:column}.earn-btn small{opacity:.85;font-size:12px}.earn-btn .ea{font-size:24px;opacity:.8}
+.lvseg{display:flex;gap:6px;margin:12px 0}.lvseg button{flex:1;border:0;border-radius:12px;padding:9px 0;font:inherit;font-weight:700;background:#eef0f4;color:var(--muted);cursor:pointer}
+.lvseg button.on{background:#1e1b4b;color:#fff}
+.esum{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}.esum div{border-radius:14px;padding:10px 12px;background:linear-gradient(135deg,#ede9fe,#e0f2fe)}
+.esum div.mine{grid-column:span 2;background:linear-gradient(135deg,#dcfce7,#e0f2fe)}
+.esum small{display:block;color:var(--muted);font-size:11.5px}.esum b{font-size:17px}.esum span{font-size:11.5px;color:var(--muted)}
+.eed{display:flex;align-items:center;gap:8px;margin:16px 0 8px;font-weight:800;font-size:15px}.eed i{width:10px;height:10px;border-radius:50%}
+.eed span{margin-left:auto;font-size:12px;color:var(--muted);font-weight:600}
+.egrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.ec{background:#f5f6f8;border-radius:12px;padding:6px 4px 7px;text-align:center;position:relative;border-top:3px solid var(--c)}
+.ec svg{width:100%;height:auto;aspect-ratio:1;display:block}.ec .n{font-size:10.5px;font-weight:700;line-height:1.15;min-height:2.3em;display:flex;align-items:center;justify-content:center}
+.ec .v{font-size:12.5px;font-weight:800;color:#047857;white-space:nowrap}.ec .m{font-size:9.5px;color:var(--muted);white-space:nowrap;letter-spacing:-.2px}
+.ec .own{position:absolute;top:4px;right:4px;background:#1e1b4b;color:#fff;font-size:9.5px;font-weight:700;border-radius:8px;padding:1px 5px}
+.ec.jp{border-top-color:#f2c94c;background:#fffbeb}
 .promo-btn{display:flex;align-items:center;gap:12px;width:100%;margin-top:12px;padding:12px 14px;border:0;border-radius:16px;cursor:pointer;text-align:left;color:#fff;font:inherit;background:linear-gradient(120deg,#6d28d9,#db2777)}
 .promo-btn .pi{font-size:22px}.promo-btn .pt{flex:1;display:flex;flex-direction:column}.promo-btn small{opacity:.85;font-size:12px}.promo-btn .pa{font-size:24px;opacity:.8}
 .promo-h{font-size:21px;font-weight:800;letter-spacing:-.3px;margin:4px 0 2px}
@@ -251,6 +266,9 @@ const I18N = {
     next_credit:"Next credit in", earned_round:"Earned this round", profit_day:"Profit per day", collection:"Collection",
     eligible:"✓ You take part in the payout", not_eligible:"ⓘ Watch at least {n} video today, otherwise this round's earnings expire.",
     no_figs:"No figures yet", no_figs_txt:"Open your free starter pack and get your first buddy.", to_packs:"Go to packs",
+    earn_btn:"Earnings overview", earn_btn_sub:"What every Buddy earns – up to level 500", earn_title:"Earnings overview",
+    earn_sub:"Daily earnings of every Buddy at the chosen level. Every level adds +5 %.", earn_level:"Level", earn_all96:"All 96 Buddies", earn_alljp:"All 4 Jackpots",
+    per_month:"/month", earn_yours:"Your Buddies now", owned_lv:"Lv {n}",
     mine:"Mine", jackpot:"Jackpot", per_day:"/day", jp_info:"4 extra figures – they don't count towards the collection and can be in any pack.",
     packs_sub:"Every pack contains a random figure. Duplicate: 40 % of the diamonds back.", free:"FREE", open_free:"Open for free", open:"Open",
     dup_back:"Duplicate: +{n} 💎 back", get_diamonds:"Get diamonds under <a href=\"#belohnungen\" style=\"color:var(--accent);font-weight:600\">Diamonds</a>.",
@@ -287,6 +305,9 @@ const I18N = {
     next_credit:"Nächste Gutschrift in", earned_round:"Verdient diese Runde", profit_day:"Profit pro Tag", collection:"Sammlung",
     eligible:"✓ Du nimmst an der Auszahlung teil", not_eligible:"ⓘ Sieh dir heute mindestens {n} Werbung an, sonst verfällt der Ertrag dieser Runde.",
     no_figs:"Noch keine Figuren", no_figs_txt:"Öffne dein kostenloses Start-Pack und hol dir deinen ersten Kumpel.", to_packs:"Zu den Packs",
+    earn_btn:"Verdienst-Übersicht", earn_btn_sub:"Was jeder Buddy verdient – bis Stufe 500", earn_title:"Verdienst-Übersicht",
+    earn_sub:"Tagesverdienst jedes Buddys auf der gewählten Stufe. Jede Stufe bringt +5 %.", earn_level:"Stufe", earn_all96:"Alle 96 Buddies", earn_alljp:"Alle 4 Jackpots",
+    per_month:"/Monat", earn_yours:"Deine Buddies jetzt", owned_lv:"Lv {n}",
     mine:"Meine", jackpot:"Jackpot", per_day:"/Tag", jp_info:"4 Extra-Figuren – sie zählen nicht zur Sammlung und können in jedem Pack stecken.",
     packs_sub:"Jedes Pack enthält eine zufällige Figur. Doppelte Figur: 40 % der Diamanten zurück.", free:"GRATIS", open_free:"Gratis öffnen", open:"Öffnen",
     dup_back:"Doppelt: +{n} 💎 zurück", get_diamonds:"Diamanten bekommst du unter <a href=\"#belohnungen\" style=\"color:var(--accent);font-weight:600\">Diamanten</a>.",
@@ -354,7 +375,7 @@ const REGULAR = CHARS.filter(c=>!JP[c.id]).map(c=>c.id);
 const daily = (id,l)=>{ if(JP[id]) return Math.round(JP[id].usd*(1+0.05*(l-1))*1e6)/1e6; const [lo,hi]=EDITION_USD[BY[id].edition]; return Math.round((lo+(hi-lo)*((BY[id].no-1)%20)/19)*(1+0.05*(l-1))*1e6)/1e6; };
 const lvCost = (id,l)=> Math.ceil((2+0.15*l)*COST_F[BY[id].edition]);
 const adReward = n=> AD_D;
-const APP_VERSION = "2026-11-07.5";
+const APP_VERSION = "2026-11-07.6";
 
 /* ================================================================ Verbindung */
 const tg = window.Telegram && window.Telegram.WebApp;
@@ -467,7 +488,8 @@ const VIEWS = {
                      <div class="meta"><div class="nm">${NAME(id)}</div><div class="pr">+${money(k.daily)}${T("per_day")}</div></div></button>`;
       return `<div class="fig locked"><div class="art">${c.svg}</div><div class="meta"><div class="nm">${jp?T("jackpot"):"#"+c.no} ???</div><div class="pr" style="color:var(--faint)">${jp?money(jp.usd)+T("per_day"):EDN(c.edition)}</div></div></div>`;
     };
-    return roundCard() + bonusCard() + `<div class="seg">
+    return roundCard() + bonusCard() + `<button class="earn-btn" data-earn><span class="ei">📊</span><span class="et"><b>${T("earn_btn")}</b><small>${T("earn_btn_sub")}</small></span><span class="ea">›</span></button>
+      <div class="seg">
         <button data-f="meine" class="${filter==="meine"?"on":""}">${T("mine")}</button>
         <button data-f="alle" class="${filter==="alle"?"on":""}">${T("collection")} ${S.collected}/${S.collection_total}</button>
         <button data-f="jackpot" class="${filter==="jackpot"?"on":""}">${T("jackpot")} ${jpOwned}/4</button></div>
@@ -628,6 +650,29 @@ function openDetail(id){
     <p style="text-align:center;color:var(--muted);font-size:12.5px;margin:12px 0 0">${T("you_have")} 💎 ${fmt(S.diamonds)}</p>`;
   $("sheet").classList.add("on"); $("scrim").classList.add("on");
 }
+let earnLv = 500;
+function openEarnings(lv){
+  if(lv) earnLv = lv;
+  openId = null;
+  const own = owned(), L = earnLv;
+  const sum = ids=> ids.reduce((a,id)=>a+daily(id,L),0);
+  const card = id=>{ const c=BY[id], k=own[id], d=daily(id,L), jp=!!JP[id];
+    return `<div class="ec ${jp?"jp":""}" style="--c:${ED_COLOR[c.edition]}">${k?`<span class="own">${T("owned_lv",{n:k.level})}</span>`:""}${c.svg}
+      <div class="n">${NAME(id)}</div><div class="v">${money(d)}</div><div class="m">${money(d*30)}${T("per_month")}</div></div>`; };
+  const eds = ["klassik","frost","lava","gold","kosmos"];
+  const mineNow = S.kumpels.reduce((a,k)=>a+k.daily,0);
+  $("sheet").innerHTML = `<div class="grab"></div><button class="x" data-close aria-label="${T("close")}">✕</button>
+    <div class="promo-h">📊 ${T("earn_title")}</div><p class="sub" style="margin:0">${T("earn_sub")}</p>
+    <div class="lvseg">${[1,100,250,500].map(l=>`<button data-elv="${l}" class="${l===L?"on":""}">${T("earn_level")} ${l}</button>`).join("")}</div>
+    <div class="esum"><div><small>${T("earn_all96")}</small><b>${money(sum(REGULAR))}</b> <span>${T("per_day")}</span></div>
+      <div><small>${T("earn_alljp")}</small><b>${money(sum(JACKPOTS.map(j=>j.char)))}</b> <span>${T("per_day")}</span></div>
+      <div class="mine"><small>${T("earn_yours")}</small><b>${money(mineNow)}</b> <span>${T("per_day")} · ${money(mineNow*30)}${T("per_month")}</span></div></div>
+    ${eds.map(e=>{ const ids=REGULAR.filter(id=>BY[id].edition===e);
+      return `<div class="eed"><i style="background:${ED_COLOR[e]}"></i>${EDN(e)} · ${RAR(e)}<span>${money(sum(ids))}${T("per_day")}</span></div><div class="egrid">${ids.map(card).join("")}</div>`; }).join("")}
+    <div class="eed"><i style="background:#f2c94c"></i>Jackpot<span>${money(sum(JACKPOTS.map(j=>j.char)))}${T("per_day")}</span></div>
+    <div class="egrid">${JACKPOTS.map(j=>card(j.char)).join("")}</div>`;
+  $("sheet").classList.add("on"); $("scrim").classList.add("on");
+}
 const PROMO_BANNERS = ["story","square","landscape"];
 const promoUrl = f => location.origin + "/promo/" + f;
 function openPromo(){
@@ -723,6 +768,8 @@ document.addEventListener("click", async e=>{
     const url = "https://t.me/share/url?url="+encodeURIComponent(S.ref_link)+"&text="+encodeURIComponent(T("share_text",{n:S.ref_diamonds}));
     tg ? tg.openTelegramLink(url) : window.open(url); return;
   }
+  if("earn" in d) return openEarnings();
+  if(d.elv){ const sc=$("sheet").scrollTop; openEarnings(+d.elv); $("sheet").scrollTop=sc; return; }
   if("promo" in d) return openPromo();
   if(d.dl) return promoDownload(d.dl);
   if(d.story) return promoStory(d.story);
