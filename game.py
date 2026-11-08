@@ -40,6 +40,8 @@ DEFAULTS = {
     "skip_limits": [20, 40, 60],  # Restzeit bis … Min → 1 / 2 / 3 Videos zum Sofort-Füllen
     "skip_max_day": 30,           # Sofort-Füllen pro Tag
     "skip_diamonds": 2,           # 💎 pro Skip-Video
+    # Komfort-Pass (Kauf über CryptoBot): alle Buddies dauerhaft wach, keine XP-Wartezeit
+    "pass_price_eur": 9.99, "pass_days": 365,
     # Sonstiges
     "min_ads_24h": 0,             # alte Regel: Videos in 24 h für die Rundenauszahlung (0 = aus, das Wach-System ersetzt sie)
     "max_payout_per_round": 0.0,  # Notbremse in $ pro Runde (0 = keine)

@@ -135,6 +135,13 @@ h2{font-size:18px;font-weight:800;letter-spacing:-.2px;margin:22px 0 4px}
 .wake .row{display:flex;justify-content:space-between;font-size:12px;color:#d7dbe4}
 .wake .wbtn{margin-top:12px;background:linear-gradient(90deg,#fbbf24,#f97316);color:#1e1b4b;font-size:15px}
 .wake p{font-size:11.5px;color:#c7cbe0;margin:10px 0 0;line-height:1.45}
+.pass{background:linear-gradient(140deg,#0f172a,#312e81 55%,#7c3aed);color:#fff;border-radius:20px;padding:18px;margin:0 0 14px;position:relative;overflow:hidden}
+.pass::after{content:"♾️";position:absolute;right:-6px;top:-14px;font-size:92px;opacity:.12}
+.pass .pt{font-size:12px;font-weight:700;color:#fcd34d;letter-spacing:.6px}
+.pass h3{margin:4px 0 10px;font-size:20px}
+.pass ul{margin:0 0 12px;padding:0;list-style:none;font-size:13.5px;line-height:1.7;color:#e0e7ff}
+.pass .btn{background:linear-gradient(90deg,#fbbf24,#f97316);color:#1e1b4b}
+.pass small{display:block;text-align:center;color:#c7d2fe;font-size:11.5px;margin-top:8px}
 .xptab .kv span:last-child{color:var(--ink);font-weight:600}
 .tag.jptag{background:linear-gradient(90deg,#f6c445,#d69e2e);margin-left:4px}
 .odds{display:flex;height:6px;border-radius:6px;overflow:hidden;margin:2px 0 6px;background:var(--soft)}
@@ -284,6 +291,8 @@ const I18N = {
     ev_title:"Events", tournaments:"Tournaments", news:"News", no_events:"No tournament running right now – check back soon!", no_news:"No news yet.",
     ends_in:"Ends in {t}", starts_in:"Starts in {t}", ended:"Ended", your_rank:"Your rank", not_ranked:"Not ranked yet – {m} to join!", prizes:"Prizes",
     upcoming:"Upcoming", results:"Results", rank_short:"#{n}", admin_open:"⚙️ Admin panel", d_short:"d", h_short:"h", m_short:"m",
+    pass_tag:"COMFORT PASS", pass_title:"All Buddies always awake", pass_b1:"☀️ Awake 24/7 – no wake videos needed", pass_b2:"⚡ No XP wait – level up instantly", pass_b3:"🐾 Applies to all your Buddies, also new ones",
+    pass_buy:"Buy for {p} · {d} days", pass_note:"Paid via @CryptoBot with USDT or TRX", pass_active:"♾️ Comfort Pass active until {d}", pass_active_sub:"All Buddies awake, no XP wait", pass_extend:"Extend by {d} days · {p}", pass_open:"Payment open", pass_after:"After paying, tap “Check payment”",
     awake_title:"Your team is awake", awake_sub:"All Buddies are earning", sleep_title:"Your team is asleep", sleep_sub:"Sleeping Buddies earn nothing",
     left_lbl:"left", stock:"Stock {n} / {m} videos", to_full:"{n} more to {h} h", full:"Fully stocked", wake_btn:"Watch video · +{h} h awake",
     wake_note:"{n} videos = all Buddies {h} h awake (max. {h} h in stock). Sleeping Buddies earn nothing and collect no XP. Wake videos give no diamonds.",
@@ -330,6 +339,8 @@ const I18N = {
     ev_title:"Events", tournaments:"Turniere", news:"News", no_events:"Gerade läuft kein Turnier – schau bald wieder vorbei!", no_news:"Noch keine News.",
     ends_in:"Endet in {t}", starts_in:"Startet in {t}", ended:"Beendet", your_rank:"Dein Platz", not_ranked:"Noch nicht platziert – {m}, um mitzumachen!", prizes:"Preise",
     upcoming:"Demnächst", results:"Ergebnisse", rank_short:"#{n}", admin_open:"⚙️ Admin-Panel", d_short:"T", h_short:"Std", m_short:"Min",
+    pass_tag:"KOMFORT-PASS", pass_title:"Alle Buddies immer wach", pass_b1:"☀️ Rund um die Uhr wach – keine Wach-Videos nötig", pass_b2:"⚡ Keine XP-Wartezeit – sofort leveln", pass_b3:"🐾 Gilt für alle Buddies, auch neue",
+    pass_buy:"Kaufen für {p} · {d} Tage", pass_note:"Bezahlt über @CryptoBot mit USDT oder TRX", pass_active:"♾️ Komfort-Pass aktiv bis {d}", pass_active_sub:"Alle Buddies wach, keine XP-Wartezeit", pass_extend:"Um {d} Tage verlängern · {p}", pass_open:"Zahlung offen", pass_after:"Nach dem Bezahlen auf „Zahlung prüfen“ tippen",
     awake_title:"Dein Team ist wach", awake_sub:"Alle Buddies verdienen", sleep_title:"Dein Team schläft", sleep_sub:"Schlafende Buddies verdienen nichts",
     left_lbl:"übrig", stock:"Vorrat {n} / {m} Videos", to_full:"noch {n} bis {h} Std", full:"Vorrat voll", wake_btn:"Video ansehen · +{h} Std wach",
     wake_note:"{n} Videos = alle Buddies {h} Std wach (max. {h} Std auf Vorrat). Schlafende Buddies verdienen nichts und sammeln keine XP. Wach-Videos geben keine Diamanten.",
@@ -411,7 +422,7 @@ const base = id=>{ if(S&&S.econ&&S.econ.bases[id]!=null) return S.econ.bases[id]
 const daily = (id,l)=> Math.round(base(id)*mult(l)*1e6)/1e6;
 const packOdds = k=> (S&&S.econ&&S.econ.packs[k]) || PACKS[k];
 const adReward = n=> AD_D;
-const APP_VERSION = "2026-11-08.3";
+const APP_VERSION = "2026-11-08.4";
 
 /* ================================================================ Verbindung */
 const tg = window.Telegram && window.Telegram.WebApp;
@@ -515,6 +526,8 @@ function roundCard(){
   </div>`;
 }
 function wakeCard(){
+  if(S.pass_active) return `<div class="wake" id="wakeCard"><div class="top"><div class="sun">♾️</div>
+      <div class="tt"><b>${T("pass_active",{d:dateStr(S.pass_until)}).replace("♾️ ","")}</b><small>${T("pass_active_sub")}</small></div></div></div>`;
   const left = Math.max(0, S.awake_until - now()), per = S.wake_hours*3600, slots = Math.round(S.wake_max_hours/S.wake_hours);
   const have = Math.min(slots, Math.ceil(left/per - 0.001)), awake = left>0, full = S.wake_max_hours*3600 - left < 60;
   return `<div class="wake ${awake?"":"sleep"}" id="wakeCard"><div class="top"><div class="sun">${awake?"☀️":"😴"}</div>
@@ -681,10 +694,22 @@ function bonusCard(){
     <div class="bar" style="margin:10px 0 0"><i style="width:${p}%;background:linear-gradient(90deg,#f6c445,#d69e2e)"></i></div></div>`;
 }
 
+const eur = n=> n.toLocaleString(LOC(),{minimumFractionDigits:2,maximumFractionDigits:2}) + " €";
+const dateStr = t=> new Date(t*1000).toLocaleDateString(LOC(),{day:"2-digit",month:"2-digit",year:"numeric"});
+function passCard(){
+  const p = eur(S.pass_price_eur), d = S.pass_days;
+  return `<div class="pass"><div class="pt">${T("pass_tag")}</div>
+    <h3>${S.pass_active ? T("pass_active",{d:dateStr(S.pass_until)}) : T("pass_title")}</h3>
+    <ul><li>${T("pass_b1")}</li><li>${T("pass_b2")}</li><li>${T("pass_b3")}</li></ul>
+    <button class="btn" data-buypass>${S.pass_active ? T("pass_extend",{d, p}) : T("pass_buy",{p, d})}</button>
+    ${S.pass_open ? `<div class="kv" style="margin-top:10px;color:#e0e7ff"><span>${T("pass_open")}</span><a href="${esc(S.pass_open.url)}" data-tglink style="color:#fcd34d;font-weight:700;text-decoration:none">${T("pay")}</a></div>
+      <button class="btn ghost" data-topcheck style="margin-top:8px;background:rgba(255,255,255,.12);color:#fff">${T("check_pay")}</button>` : ""}
+    <small>${T("pass_note")}</small></div>`;
+}
 function shopSection(){
   const total = S.deposit + S.usdt, P = S.diamonds_per_usdt;
   const pk = [1,5,10,25].map(u=>({d:u*P, u}));
-  return `<h2>${T("buy_title")}</h2><p class="sub">${T("buy_sub",{n:P})}</p>
+  return `<h2>${T("buy_title")}</h2>${passCard()}<p class="sub">${T("buy_sub",{n:P})}</p>
     <div class="card"><div class="kv"><span>${T("deposit")}</span><b class="num">${money(S.deposit)}</b></div>
       <div class="kv"><span>${T("earned_bal")}</span><b class="num">${money(S.usdt)}</b></div></div>
     <div class="shopgrid">${pk.map(x=>`<button class="shopitem" data-buydia="${x.d}" ${total+1e-9>=x.u?"":"disabled"}>
@@ -804,7 +829,7 @@ function tick(){
   if($("cd")) $("cd").textContent = left;
   if($("cd2")) $("cd2").textContent = left;
   if($("rp")) $("rp").textContent = money(liveRound());
-  if($("wakeLeft")){ const l = S.awake_until-now(); $("wakeLeft").textContent = hm(l); if(l<=0 && !$("wakeCard").classList.contains("sleep")) render(); }
+  if($("wakeLeft") && !S.pass_active){ const l = S.awake_until-now(); $("wakeLeft").textContent = hm(l); if(l<=0 && !$("wakeCard").classList.contains("sleep")) render(); }
   let reready = false;
   document.querySelectorAll("[data-xpid]").forEach(el=>{ const k = S.kumpels.find(x=>x.id===el.dataset.xpid); if(!k) return;
     const rest = k.xp_need - xpNow(k); if(rest<=0) reready = true; else el.textContent = T("xp_left",{t:ms(rest)}); });
@@ -866,6 +891,10 @@ document.addEventListener("click", async e=>{
   if(d.buydia){ const r = await act("buy_diamonds",{diamonds:+d.buydia}); if(r) toast(T("bought",{n:fmt(r.diamonds)})); return; }
   if(d.topup){
     try{ const {url} = await server("topup",{amount:+d.topup}); tg.openTelegramLink(url); toast(T("after_pay")); setTimeout(()=>call("state").then(apply),1000); }
+    catch(err){ toast(err.message); } return;
+  }
+  if("buypass" in d){
+    try{ const {url} = await server("buy_pass"); tg.openTelegramLink(url); toast(T("pass_after")); setTimeout(()=>call("state").then(apply),1000); }
     catch(err){ toast(err.message); } return;
   }
   if("topcheck" in d){ await act("topup_check"); toast(T("updated")); return; }

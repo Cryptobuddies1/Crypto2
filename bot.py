@@ -11,7 +11,7 @@ import math
 import os
 import sqlite3
 from contextlib import asynccontextmanager
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from urllib.parse import parse_qsl
 
@@ -138,6 +138,9 @@ def init_db() -> None:
             invoice_id INTEGER PRIMARY KEY, user_id INTEGER, amount REAL, status TEXT, url TEXT, created REAL, paid REAL);
         CREATE TABLE IF NOT EXISTS diamond_buys (
             id INTEGER PRIMARY KEY, user_id INTEGER, diamonds INTEGER, from_deposit REAL, from_balance REAL, ts REAL);
+        CREATE TABLE IF NOT EXISTS pass_buys (
+            invoice_id INTEGER PRIMARY KEY, user_id INTEGER, price REAL, currency TEXT, days INTEGER,
+            status TEXT, url TEXT, created REAL, paid REAL);
         CREATE TABLE IF NOT EXISTS purchases (
             id INTEGER PRIMARY KEY, user_id INTEGER, stars INTEGER, diamonds INTEGER,
             charge_id TEXT UNIQUE, ts REAL);
@@ -156,7 +159,7 @@ def init_db() -> None:
                           ("awake_until", "REAL NOT NULL DEFAULT 0"), ("last_settle", "REAL NOT NULL DEFAULT 0"),
                           ("coins", "REAL NOT NULL DEFAULT 0"), ("ad_rev", "REAL NOT NULL DEFAULT 0"),
                           ("dia_frac", "REAL NOT NULL DEFAULT 0"), ("skips_day", "TEXT"),
-                          ("skips_today", "INTEGER NOT NULL DEFAULT 0")]:
+                          ("skips_today", "INTEGER NOT NULL DEFAULT 0"), ("pass_until", "REAL NOT NULL DEFAULT 0")]:
             if col not in cols:   # Spalten für ältere Datenbanken nachrüsten
                 con.execute(f"ALTER TABLE users ADD COLUMN {col} {decl}")
         if "awake_until" not in cols:   # Umstellung aufs Wach-System: alle starten wach
@@ -258,7 +261,7 @@ def settle(con, user_id: int, t: float | None = None) -> None:
     u = con.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
     if not u:
         return
-    awake_end = min(t, u["awake_until"])
+    awake_end = min(t, max(u["awake_until"], u["pass_until"]))
     per_round: dict[int, float] = {}
     kumpels = con.execute("SELECT * FROM kumpels WHERE user_id=?", (user_id,)).fetchall()
     for k in kumpels:
@@ -269,7 +272,7 @@ def settle(con, user_id: int, t: float | None = None) -> None:
             per_sec = game.daily_profit(k["char_id"], k["level"]) / 86400
             for p, secs in game.split_by_period(k["last_collect"], awake_end):
                 per_round[p] = per_round.get(p, 0) + per_sec * secs
-        xp = min(k["xp"] + awake, max(k["xp"], game.xp_wait(k["level"])))
+        xp = min(k["xp"] + awake, max(k["xp"], xp_need(u, k["level"])))
         con.execute("UPDATE kumpels SET last_collect=?, xp=? WHERE user_id=? AND char_id=?", (t, xp, user_id, k["char_id"]))
     con.execute("UPDATE users SET last_settle=? WHERE id=?", (t, user_id))
     total = 0.0
@@ -282,13 +285,25 @@ def settle(con, user_id: int, t: float | None = None) -> None:
         events.add(con, user_id, "profit", total, t)
 
 
+def has_pass(u, t: float | None = None) -> bool:
+    """Komfort-Pass aktiv: alle Buddies dauerhaft wach, keine XP-Wartezeit."""
+    return u["pass_until"] > (t or game.now())
+
+
+def xp_need(u, level: int) -> int:
+    return 0 if has_pass(u) else game.xp_wait(level)
+
+
 def wake_info(u, t: float) -> dict:
-    left = max(0.0, u["awake_until"] - t)
+    until = max(u["awake_until"], u["pass_until"])
+    left = max(0.0, until - t)
     per = game.CFG["wake_hours"] * 3600
     room = game.CFG["wake_max_hours"] * 3600 - left
-    return {"awake_until": u["awake_until"], "awake_left": left, "wake_hours": game.CFG["wake_hours"],
+    return {"awake_until": until, "awake_left": left, "wake_hours": game.CFG["wake_hours"],
             "wake_max_hours": game.CFG["wake_max_hours"], "wake_videos_to_full": max(0, math.ceil(room / per - 0.01)) if per else 0,
-            "wake_full": room < 60}
+            "wake_full": room < 60, "pass_until": u["pass_until"], "pass_active": has_pass(u, t),
+            "pass_price_eur": game.CFG["pass_price_eur"], "pass_days": game.CFG["pass_days"],
+            "pass_open": None}
 
 
 def econ_view() -> dict:
@@ -315,7 +330,7 @@ def state(con, user_id: int) -> dict:
     kumpels = []
     for k in con.execute("SELECT * FROM kumpels WHERE user_id=?", (user_id,)):
         lvl = k["level"]
-        need = game.xp_wait(lvl) if lvl < game.MAX_LEVEL else 0
+        need = xp_need(u, lvl) if lvl < game.MAX_LEVEL else 0
         rest = max(0.0, need - k["xp"])
         kumpels.append({
             "id": k["char_id"], "level": lvl, "copies": k["copies"],
@@ -351,7 +366,9 @@ def state(con, user_id: int) -> dict:
         "ref_earned": round(u["ref_earned"], 6), "ref_share": game.REFERRAL_SHARE, "ref_diamonds": game.REFERRAL_DIAMONDS,
         "kumpels": kumpels, "payouts": payouts, "top": top,
         "min_payout": MIN_PAYOUT, "payout_asset": PAYOUT_ASSET, "payout_mode": PAYOUT_MODE, "min_ads_24h": game.CFG["min_ads_24h"],
-        **wake_info(u, t),
+        **wake_info(u, t), "pass_open": (lambda r: dict(r) if r else None)(con.execute(
+            "SELECT invoice_id, url FROM pass_buys WHERE user_id=? AND status='active' AND created>? ORDER BY created DESC LIMIT 1",
+            (user_id, t - 3600)).fetchone()),
         "skips_today": skips_today, "skips_max": game.CFG["skip_max_day"], "skip_diamonds": game.CFG["skip_diamonds"],
         "econ": econ_view(),
         "jackpots": [{"char": j["char"], "usd": j["usd"]} for j in game.JACKPOTS],   # ohne Chancen
@@ -439,7 +456,7 @@ def act_levelup(con, user_id, u, char, steps):
     steps = max(1, min(int(steps or 1), game.MAX_LEVEL))
     why = "no_diamonds"
     while done < steps and level < game.MAX_LEVEL:
-        need = game.xp_wait(level)
+        need = xp_need(u, level)
         if xp < need:   # XP noch nicht voll
             why = "xp_wait"
             break
@@ -451,7 +468,7 @@ def act_levelup(con, user_id, u, char, steps):
     if not done:
         if level >= game.MAX_LEVEL:
             raise E(400, "max_level")
-        raise E(400, why, m=math.ceil((game.xp_wait(level) - xp) / 60))
+        raise E(400, why, m=math.ceil((xp_need(u, level) - xp) / 60))
     con.execute("UPDATE users SET diamonds=diamonds-? WHERE id=?", (spent, user_id))
     con.execute("UPDATE kumpels SET level=?, xp=?, skip_ads=0 WHERE user_id=? AND char_id=?", (level, xp, user_id, char))
     return {"levels": done, "spent": spent}
@@ -477,7 +494,7 @@ def act_ad(con, user_id, u, purpose="diamonds", char=None):
         k = con.execute("SELECT * FROM kumpels WHERE user_id=? AND char_id=?", (user_id, char)).fetchone()
         if not k:
             raise E(400, "no_figure")
-        if k["level"] >= game.MAX_LEVEL or k["xp"] >= game.xp_wait(k["level"]):
+        if k["level"] >= game.MAX_LEVEL or k["xp"] >= xp_need(u, k["level"]):
             raise E(400, "xp_full")
         if skips_today >= cfg["skip_max_day"]:
             raise E(400, "skip_limit", n=cfg["skip_max_day"])
@@ -582,6 +599,72 @@ async def act_topup(user_id: int, amount) -> dict:
     return {"url": url, "invoice_id": inv["invoice_id"]}
 
 
+async def act_buy_pass(user_id: int) -> dict:
+    """Rechnung für den Komfort-Pass (in Euro, bezahlt mit USDT oder TRX über CryptoBot)."""
+    if not SHOP_ENABLED or not CRYPTOPAY_TOKEN:
+        raise E(400, "topup_off")
+    price, days = game.CFG["pass_price_eur"], game.CFG["pass_days"]
+    with db() as con:   # offene Rechnung wiederverwenden statt neue anzulegen
+        row = con.execute("SELECT invoice_id, url FROM pass_buys WHERE user_id=? AND status='active' AND created>? AND price=?",
+                          (user_id, game.now() - 3000, price)).fetchone()
+    if row:
+        return {"url": row["url"], "invoice_id": row["invoice_id"]}
+    res = await cryptopay("createInvoice", {
+        "currency_type": "fiat", "fiat": "EUR", "accepted_assets": TOPUP_ASSETS,
+        "amount": f"{price:.2f}", "payload": f"pass:{user_id}",
+        "description": tr(user_lang(user_id), "pass_desc", days=days), "expires_in": 3600,
+        "allow_comments": False, "allow_anonymous": False})
+    if not res.get("ok"):
+        raise E(502, "cryptobot_down")
+    inv = res["result"]
+    url = inv.get("mini_app_invoice_url") or inv.get("bot_invoice_url") or inv.get("pay_url")
+    with db() as con:
+        con.execute("INSERT INTO pass_buys (invoice_id, user_id, price, currency, days, status, url, created) VALUES (?,?,?,?,?,?,?,?)",
+                    (inv["invoice_id"], user_id, price, "EUR", days, "active", url, game.now()))
+    return {"url": url, "invoice_id": inv["invoice_id"]}
+
+
+def grant_pass(con, user_id: int, days: int) -> float:
+    """Pass gutschreiben/verlängern. Vorher abrechnen, damit die Zeit vor dem Kauf nicht als wach zählt."""
+    settle(con, user_id)
+    u = con.execute("SELECT pass_until FROM users WHERE id=?", (user_id,)).fetchone()
+    until = max(game.now(), u["pass_until"]) + days * 86400
+    con.execute("UPDATE users SET pass_until=? WHERE id=?", (until, user_id))
+    return until
+
+
+def credit_pass(con, invoice_id: int) -> int | None:
+    """Schreibt einen bezahlten Pass genau einmal gut. Gibt die user_id zurück."""
+    row = con.execute("SELECT * FROM pass_buys WHERE invoice_id=?", (invoice_id,)).fetchone()
+    if not row or row["status"] == "paid":
+        return None
+    con.execute("UPDATE pass_buys SET status='paid', paid=? WHERE invoice_id=?", (game.now(), invoice_id))
+    grant_pass(con, row["user_id"], row["days"])
+    log.info("KOMFORT-PASS an Spieler %s (%s Tage)", row["user_id"], row["days"])
+    return row["user_id"]
+
+
+async def check_passes(user_id: int | None = None) -> int:
+    if not CRYPTOPAY_TOKEN:
+        return 0
+    with db() as con:
+        q, args = "SELECT invoice_id FROM pass_buys WHERE status='active' AND created>?", [game.now() - 2 * 3600]
+        if user_id:
+            q += " AND user_id=?"; args.append(user_id)
+        ids = [r[0] for r in con.execute(q, args)]
+    if not ids:
+        return 0
+    res = await cryptopay("getInvoices", {"invoice_ids": ",".join(map(str, ids))})
+    n = 0
+    with db() as con:
+        for inv in (res.get("result") or {}).get("items", []):
+            if inv.get("status") == "paid" and credit_pass(con, inv["invoice_id"]):
+                n += 1
+            elif inv.get("status") == "expired":
+                con.execute("UPDATE pass_buys SET status='expired' WHERE invoice_id=?", (inv["invoice_id"],))
+    return n
+
+
 async def check_topups(user_id: int | None = None) -> int:
     """Fragt bei CryptoBot nach, ob offene Aufladungen bezahlt wurden (zusätzlich zum Webhook)."""
     if not CRYPTOPAY_TOKEN:
@@ -632,7 +715,7 @@ async def characters_js():
     return FileResponse(BASE / "webapp" / "characters.js", media_type="application/javascript")
 
 
-APP_VERSION = "2026-11-08.3"
+APP_VERSION = "2026-11-08.4"
 
 
 @app.get("/version")
@@ -680,6 +763,15 @@ async def cryptopay_webhook(request: Request):
         raise HTTPException(401, "falsche Signatur")
     data = json.loads(raw)
     inv = data.get("payload") or {}
+    if data.get("update_type") == "invoice_paid" and str(inv.get("payload", "")).startswith("pass:"):
+        with db() as con:
+            uid = credit_pass(con, int(inv["invoice_id"]))
+            until = con.execute("SELECT pass_until FROM users WHERE id=?", (uid,)).fetchone()[0] if uid else 0
+        if uid:
+            try:
+                await bot.send_message(uid, tr(user_lang(uid), "pass_ok", date=datetime.fromtimestamp(until).strftime("%d.%m.%Y")))
+            except Exception:
+                pass
     if data.get("update_type") == "invoice_paid" and str(inv.get("payload", "")).startswith("topup:"):
         with db() as con:
             uid = credit_topup(con, int(inv["invoice_id"]), float(inv["amount"]))
@@ -729,7 +821,10 @@ async def handle(action, user_id, tg_user, start_param, body):
         return await act_topup(user_id, body.get("amount"))
     if action == "topup_check":
         await check_topups(user_id)
+        await check_passes(user_id)
         action = "state"
+    if action == "buy_pass":
+        return await act_buy_pass(user_id)
 
     with db() as con:
         joined = ensure_user(con, user_id, name, parse_ref(start_param))   # Einladung auch beim direkten App-Start
@@ -865,9 +960,12 @@ async def admin_api(action: str, request: Request, x_init_data: str | None = Hea
             with db() as con:
                 saved = {r["key"] for r in con.execute("SELECT key FROM settings")}
                 ads7 = con.execute("SELECT COUNT(*) FROM ad_views WHERE ts>?", (game.now() - 7 * 86400,)).fetchone()[0]
-                awake_n = con.execute("SELECT COUNT(*) FROM users WHERE awake_until>?", (game.now(),)).fetchone()[0]
+                awake_n = con.execute("SELECT COUNT(*) FROM users WHERE awake_until>? OR pass_until>?", (game.now(), game.now())).fetchone()[0]
+                passes_n = con.execute("SELECT COUNT(*) FROM users WHERE pass_until>?", (game.now(),)).fetchone()[0]
+                passes_sold = con.execute("SELECT COUNT(*), COALESCE(SUM(price),0) FROM pass_buys WHERE status='paid'").fetchone()
             return {"defaults": game.DEFAULTS, "values": game.CFG, "changed": sorted(saved),
-                    "info": {"ads_7d": ads7, "awake_now": awake_n}}
+                    "info": {"ads_7d": ads7, "awake_now": awake_n, "passes_active": passes_n,
+                             "passes_sold": passes_sold[0], "passes_eur": round(passes_sold[1], 2)}}
         if action == "econ_set":
             owner_only()
             try:
@@ -940,12 +1038,30 @@ async def admin_api(action: str, request: Request, x_init_data: str | None = Hea
                 ks = [dict(id=k["char_id"], level=k["level"], copies=k["copies"], daily=game.daily_profit(k["char_id"], k["level"]))
                       for k in con.execute("SELECT * FROM kumpels WHERE user_id=? ORDER BY level DESC", (uid,))]
                 prof = {k: u[k] for k in ("id", "name", "username", "diamonds", "usdt", "deposit", "usdt_paid", "points_total",
-                                          "created", "last_seen", "lang", "blocked", "collection_bonus")}
+                                          "created", "last_seen", "lang", "blocked", "collection_bonus", "pass_until")}
                 prof["friends"] = con.execute("SELECT COUNT(*) FROM users WHERE ref_by=?", (uid,)).fetchone()[0]
                 prof["is_admin"] = is_admin(uid, con)
                 prof["log"] = [dict(r) for r in con.execute(
                     "SELECT admin_id, action, details, ts FROM admin_log WHERE target=? ORDER BY id DESC LIMIT 10", (uid,))]
             return {"user": prof, "kumpels": ks}
+        if action == "user_pass":   # Komfort-Pass manuell vergeben (Tage > 0) oder entfernen (0)
+            uid, days = int(body["id"]), int(body.get("days", 0))
+            with db() as con:
+                if not con.execute("SELECT 1 FROM users WHERE id=?", (uid,)).fetchone():
+                    raise ValueError("Spieler nicht gefunden")
+                if days > 0:
+                    until = grant_pass(con, uid, days)
+                else:
+                    settle(con, uid)
+                    con.execute("UPDATE users SET pass_until=0 WHERE id=?", (uid,))
+                    until = 0
+            log_action("user_pass", uid, {"days": days})
+            if days > 0 and body.get("notify"):
+                try:
+                    await bot.send_message(uid, tr(user_lang(uid), "pass_ok", date=datetime.fromtimestamp(until).strftime("%d.%m.%Y")))
+                except Exception:
+                    pass
+            return {"ok": True, "pass_until": until}
         if action == "user_grant":
             uid, char = int(body["id"]), str(body["char"])
             level = max(1, min(game.MAX_LEVEL, int(body.get("level", 1))))
