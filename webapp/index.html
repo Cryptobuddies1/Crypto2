@@ -479,7 +479,7 @@ const $ = id=>document.getElementById(id);
 const now = ()=> Date.now()/1000 - offset;
 const fmt = n=> n>=1e9 ? (n/1e9).toLocaleString(LOC(),{maximumFractionDigits:2})+(LANG==="de"?" Mrd":"B") : n>=1e6 ? (n/1e6).toLocaleString(LOC(),{maximumFractionDigits:2})+(LANG==="de"?" Mio":"M") : Math.floor(n).toLocaleString(LOC());
 const usd = (n,d=2)=> n.toLocaleString(LOC(),{minimumFractionDigits:d,maximumFractionDigits:d});
-const dec = n=> n>=1 ? 2 : n>0 && n<0.0001 ? 6 : 4;
+const dec = n=> n>=1 ? 2 : n>=0.000001 && n<0.0001 ? 6 : 4;
 const money = n=> LANG==="de" ? usd(n, dec(n)) + " $" : "$" + usd(n, dec(n));
 const pct = w=> String(w).replace(".", LANG==="de"?",":".") + " %";
 const hms = s=>{ s=Math.max(0,Math.floor(s)); return [Math.floor(s/3600),Math.floor(s%3600/60),s%60].map((x,i)=>i?String(x).padStart(2,"0"):x).join(":"); };
