@@ -58,7 +58,13 @@ MIN_PAYOUT = float(env("MIN_PAYOUT", "1.0"))        # USDT, darunter wird angesp
 PAYOUT_MODE = env("PAYOUT_MODE", "off")             # off = nur gutschreiben, test = Testnetz, live = echtes Geld
 CRYPTOPAY_TOKEN = env("CRYPTOPAY_TOKEN", "")
 PAYOUT_ASSET = env("PAYOUT_ASSET", "TRX")            # Auszahlung in TRX (Beträge im Spiel bleiben in $)
-TOPUP_ASSETS = env("TOPUP_ASSETS", "USDT,TRX")       # womit Spieler Aufladungen in $ bezahlen können
+TOPUP_ASSETS = env("TOPUP_ASSETS", "ALL")            # womit Spieler bezahlen können: ALL = alle Coins von CryptoBot, sonst z. B. "USDT,TRX"
+
+
+def pay_assets() -> dict:
+    """Leer = CryptoBot bietet alle unterstützten Coins an (USDT, TON, BTC, ETH, LTC, BNB, TRX, USDC)."""
+    v = TOPUP_ASSETS.strip().upper()
+    return {} if v in ("", "ALL", "*") else {"accepted_assets": v.replace(" ", "")}
 
 # Diamanten-Shop (Telegram Stars) – erst nach rechtlicher Prüfung einschalten!
 SHOP_ENABLED = env("SHOP_ENABLED", "false").lower() == "true"
@@ -585,7 +591,7 @@ async def act_topup(user_id: int, amount) -> dict:
     if amount not in game.TOPUP_AMOUNTS:
         raise E(400, "bad_amount")
     res = await cryptopay("createInvoice", {
-        "currency_type": "fiat", "fiat": "USD", "accepted_assets": TOPUP_ASSETS,   # Rechnung in $, bezahlt mit USDT oder TRX
+        "currency_type": "fiat", "fiat": "USD", **pay_assets(),   # Rechnung in $, bezahlt mit beliebigem Coin
         "amount": f"{amount:.2f}", "payload": f"topup:{user_id}",
         "description": tr(user_lang(user_id), "topup_desc", amount=f"{amount:g}", asset="$"), "expires_in": 3600,
         "allow_comments": False, "allow_anonymous": False})
@@ -600,7 +606,7 @@ async def act_topup(user_id: int, amount) -> dict:
 
 
 async def act_buy_pass(user_id: int) -> dict:
-    """Rechnung für den Komfort-Pass (in Euro, bezahlt mit USDT oder TRX über CryptoBot)."""
+    """Rechnung für den Komfort-Pass (in Euro, bezahlt mit beliebigem Coin über CryptoBot)."""
     if not SHOP_ENABLED or not CRYPTOPAY_TOKEN:
         raise E(400, "topup_off")
     price, days = game.CFG["pass_price_eur"], game.CFG["pass_days"]
@@ -610,7 +616,7 @@ async def act_buy_pass(user_id: int) -> dict:
     if row:
         return {"url": row["url"], "invoice_id": row["invoice_id"]}
     res = await cryptopay("createInvoice", {
-        "currency_type": "fiat", "fiat": "EUR", "accepted_assets": TOPUP_ASSETS,
+        "currency_type": "fiat", "fiat": "EUR", **pay_assets(),
         "amount": f"{price:.2f}", "payload": f"pass:{user_id}",
         "description": tr(user_lang(user_id), "pass_desc", days=days), "expires_in": 3600,
         "allow_comments": False, "allow_anonymous": False})
@@ -715,7 +721,7 @@ async def characters_js():
     return FileResponse(BASE / "webapp" / "characters.js", media_type="application/javascript")
 
 
-APP_VERSION = "2026-11-08.4"
+APP_VERSION = "2026-11-08.5"
 
 
 @app.get("/version")
