@@ -5,6 +5,7 @@ Start:  python bot.py        (Einstellungen in .env, siehe .env.example)
 import asyncio
 import hashlib
 import hmac
+import html
 import json
 import logging
 import math
@@ -220,7 +221,8 @@ def jackpot_check(con) -> str | None:
     return best["char_id"]
 
 
-def ensure_user(con, user_id: int, name: str, ref_by: int | None = None) -> dict:
+def ensure_user(con, user_id: int, name: str, ref_by: int | None = None, username: str | None = None,
+                source: str = "bot") -> dict:
     """Legt einen Spieler an. Gibt {"new": bool, "referrer": id|None} zurück."""
     if con.execute("SELECT 1 FROM users WHERE id=?", (user_id,)).fetchone():
         con.execute("UPDATE users SET name=? WHERE id=?", (name, user_id))
@@ -232,7 +234,30 @@ def ensure_user(con, user_id: int, name: str, ref_by: int | None = None) -> dict
     if valid_ref:
         con.execute("UPDATE users SET diamonds=diamonds+? WHERE id IN (?,?)", (game.REFERRAL_DIAMONDS, user_id, ref_by))
         events.add(con, ref_by, "invites", 1)
+    if game.CFG.get("notify_new_users"):
+        total = con.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+        ref_name = None
+        if valid_ref:
+            r = con.execute("SELECT name, username FROM users WHERE id=?", (ref_by,)).fetchone()
+            ref_name = f"{r['name'] or 'Spieler'}" + (f" (@{r['username']})" if r["username"] else "") + f" · {ref_by}"
+        try:
+            asyncio.get_running_loop().create_task(notify_new_user(user_id, name, username, ref_name, total, source))
+        except RuntimeError:   # kein laufender Event-Loop (z. B. Tests)
+            pass
     return {"new": True, "referrer": ref_by if valid_ref else None}
+
+
+async def notify_new_user(user_id: int, name: str, username: str | None, ref_name: str | None, total: int, source: str):
+    """Meldet dem Besitzer (ADMIN_ID) jeden neuen Spieler."""
+    who = html.escape(name or "Spieler") + (f" (@{html.escape(username)})" if username else "")
+    text = (f"🆕 <b>Neuer Spieler #{total}</b>\n👤 {who}\n🆔 <code>{user_id}</code>\n"
+            f"📍 {'Mini-App' if source == 'app' else '/start im Bot'}\n"
+            f"{'👥 eingeladen von ' + html.escape(ref_name) if ref_name else '👥 ohne Einladung'}")
+    for owner in sorted(ADMIN_IDS):
+        try:
+            await bot.send_message(owner, text, parse_mode="HTML")
+        except Exception as e:
+            log.warning("Neuer-Spieler-Meldung an %s fehlgeschlagen: %s", owner, e)
 
 
 def parse_ref(arg: str | None) -> int | None:
@@ -721,7 +746,7 @@ async def characters_js():
     return FileResponse(BASE / "webapp" / "characters.js", media_type="application/javascript")
 
 
-APP_VERSION = "2026-11-08.5"
+APP_VERSION = "2026-11-08.6"
 
 
 @app.get("/version")
@@ -833,7 +858,7 @@ async def handle(action, user_id, tg_user, start_param, body):
         return await act_buy_pass(user_id)
 
     with db() as con:
-        joined = ensure_user(con, user_id, name, parse_ref(start_param))   # Einladung auch beim direkten App-Start
+        joined = ensure_user(con, user_id, name, parse_ref(start_param), tg_user.get("username"), "app")   # Einladung auch beim direkten App-Start
         settle(con, user_id)
         con.execute("UPDATE users SET last_seen=?, blocked=0, username=? WHERE id=?",
                     (game.now(), (tg_user.get("username") or "").lower() or None, user_id))
@@ -1380,7 +1405,7 @@ def play_keyboard(lang: str):
 async def start(message: Message, command: CommandObject):
     u = message.from_user
     with db() as con:
-        joined = ensure_user(con, u.id, u.first_name, parse_ref(command.args))
+        joined = ensure_user(con, u.id, u.first_name, parse_ref(command.args), u.username, "bot")
         con.execute("UPDATE users SET username=?, blocked=0 WHERE id=?", ((u.username or "").lower() or None, u.id))
     lang = user_lang(u.id)
     text = tr(lang, "welcome", name=u.first_name)
@@ -1403,7 +1428,7 @@ async def set_language(q: CallbackQuery):
     lang = q.data.split(":", 1)[1]
     if lang in LANGS:
         with db() as con:
-            ensure_user(con, q.from_user.id, q.from_user.first_name)
+            ensure_user(con, q.from_user.id, q.from_user.first_name, None, q.from_user.username)
             con.execute("UPDATE users SET lang=? WHERE id=?", (lang, q.from_user.id))
         await q.message.answer(tr(lang, "lang_set"), reply_markup=play_keyboard(lang))
     await q.answer()
@@ -1417,7 +1442,7 @@ async def my_id(message: Message):
 @dp.message(Command("admin"))
 async def admin_cmd(message: Message):
     with db() as con:
-        ensure_user(con, message.from_user.id, message.from_user.first_name)
+        ensure_user(con, message.from_user.id, message.from_user.first_name, None, message.from_user.username)
         con.execute("UPDATE users SET username=? WHERE id=?", ((message.from_user.username or "").lower() or None, message.from_user.id))
     if not is_admin(message.from_user.id):
         return

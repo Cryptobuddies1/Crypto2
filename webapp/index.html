@@ -422,7 +422,7 @@ const base = id=>{ if(S&&S.econ&&S.econ.bases[id]!=null) return S.econ.bases[id]
 const daily = (id,l)=> Math.round(base(id)*mult(l)*1e6)/1e6;
 const packOdds = k=> (S&&S.econ&&S.econ.packs[k]) || PACKS[k];
 const adReward = n=> AD_D;
-const APP_VERSION = "2026-11-08.5";
+const APP_VERSION = "2026-11-08.6";
 
 /* ================================================================ Verbindung */
 const tg = window.Telegram && window.Telegram.WebApp;

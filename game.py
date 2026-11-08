@@ -43,6 +43,7 @@ DEFAULTS = {
     # Komfort-Pass (Kauf über CryptoBot): alle Buddies dauerhaft wach, keine XP-Wartezeit
     "pass_price_eur": 9.99, "pass_days": 365,
     # Sonstiges
+    "notify_new_users": 1,        # 1 = Besitzer (ADMIN_ID) bekommt bei jedem neuen Spieler eine Nachricht, 0 = aus
     "min_ads_24h": 0,             # alte Regel: Videos in 24 h für die Rundenauszahlung (0 = aus, das Wach-System ersetzt sie)
     "max_payout_per_round": 0.0,  # Notbremse in $ pro Runde (0 = keine)
 }
