@@ -291,7 +291,7 @@ const I18N = {
     skip_prog:"Video {a}/{b} watched", payout_lbl:"Payout", pay_from:"from {n} · {a}", round_hint:"Credited every 4 h – only for the time your team was awake.",
     braked:"Earnings limit reached: your Buddies currently earn {n} 💎/min instead of $. Watch more videos to unlock $ again.",
     xp_title:"XP wait per level", xp_none:"none", xp_skip:"Instant fill", xp_skip_v:"1 / 2 / 3 videos (by time left) · {n}× per day",
-    coins:"Coins", coins_note:"10 % of the ad revenue of each video – converted to $ every 4 h", xp_lbl:"XP", xp_need:"XP wait",
+    xp_lbl:"XP", xp_need:"XP wait",
     next_credit:"Next credit in", earned_round:"Earned this round", profit_day:"Profit per day", collection:"Collection",
     eligible:"✓ You take part in the payout", not_eligible:"ⓘ Watch at least {n} video today, otherwise this round's earnings expire.",
     no_figs:"No figures yet", no_figs_txt:"Open your free starter pack and get your first buddy.", to_packs:"Go to packs",
@@ -338,7 +338,7 @@ const I18N = {
     skip_prog:"Video {a}/{b} gesehen", payout_lbl:"Auszahlung", pay_from:"ab {n} · {a}", round_hint:"Alle 4 Std wird dein Verdienst gutgeschrieben – nur für die Zeit, in der dein Team wach war.",
     braked:"Verdienst-Grenze erreicht: Deine Buddies bringen gerade {n} 💎/Min statt $. Schau mehr Videos, dann gibt es wieder $.",
     xp_title:"XP-Wartezeit pro Level", xp_none:"keine", xp_skip:"Sofort voll", xp_skip_v:"1 / 2 / 3 Videos (je nach Restzeit) · {n}× pro Tag",
-    coins:"Coins", coins_note:"10 % der Werbeeinnahmen jedes Videos – alle 4 Std in $ umgerechnet", xp_lbl:"XP", xp_need:"XP-Wartezeit",
+    xp_lbl:"XP", xp_need:"XP-Wartezeit",
     next_credit:"Nächste Gutschrift in", earned_round:"Verdient diese Runde", profit_day:"Profit pro Tag", collection:"Sammlung",
     eligible:"✓ Du nimmst an der Auszahlung teil", not_eligible:"ⓘ Sieh dir heute mindestens {n} Werbung an, sonst verfällt der Ertrag dieser Runde.",
     no_figs:"Noch keine Figuren", no_figs_txt:"Öffne dein kostenloses Start-Pack und hol dir deinen ersten Kumpel.", to_packs:"Zu den Packs",
@@ -413,7 +413,7 @@ const base = id=>{ if(S&&S.econ&&S.econ.bases[id]!=null) return S.econ.bases[id]
 const daily = (id,l)=> Math.round(base(id)*mult(l)*1e6)/1e6;
 const packOdds = k=> (S&&S.econ&&S.econ.packs[k]) || PACKS[k];
 const adReward = n=> AD_D;
-const APP_VERSION = "2026-11-08.1";
+const APP_VERSION = "2026-11-08.2";
 
 /* ================================================================ Verbindung */
 const tg = window.Telegram && window.Telegram.WebApp;
@@ -646,9 +646,7 @@ const VIEWS = {
         <div class="kv"><span>${T("next_round")}</span><b class="num" id="cd2">${hms(S.round_end-now())}</b></div>
         <div class="kv"><span>${T("profit_day")}</span><b class="num">${money(totalDaily())}</b></div>
         <div class="kv"><span>${T("credited_last")}</span><b class="num">${lr&&lr.usdt?money(lr.usdt):"–"}</b></div>
-        <div class="kv"><span>${T("paid_total")}</span><b class="num">${money(S.usdt_paid)}</b></div>
-        <div class="kv"><span>${T("coins")}</span><b class="num">${S.coins.toLocaleString(LOC(),{maximumFractionDigits:2})} ≈ ${money(S.coins*S.econ.coin_usd)}</b></div>
-        <p style="color:var(--muted);font-size:11.5px;margin:6px 0 0">${T("coins_note")}</p></div>
+        <div class="kv"><span>${T("paid_total")}</span><b class="num">${money(S.usdt_paid)}</b></div></div>
       <div class="card"><b style="font-size:14px">${T("how_get")}</b>
         <ol class="steps"><li>${T("step1")}</li><li>${T("step2",{n:money(S.min_payout), a:S.payout_asset||"TRX"})}</li></ol>
         <p style="color:var(--muted);font-size:12px;margin:10px 0 0">${T("wallet_note",{n:S.min_ads_24h})}</p></div>

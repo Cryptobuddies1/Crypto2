@@ -40,8 +40,6 @@ DEFAULTS = {
     "skip_limits": [20, 40, 60],  # Restzeit bis … Min → 1 / 2 / 3 Videos zum Sofort-Füllen
     "skip_max_day": 30,           # Sofort-Füllen pro Tag
     "skip_diamonds": 2,           # 💎 pro Skip-Video
-    # Coins: Anteil der Werbeeinnahmen pro Video, alle 4 Std in $ umgerechnet
-    "coin_share": 0.10, "coin_usd": 0.0001,
     # Sanfte Bremse: verdient ein Spieler mehr als brake_ratio × seine eigenen Werbeeinnahmen (+ Startpuffer),
     # bringen seine Buddies Diamanten statt $
     "brake_ratio": 2.0, "brake_grace_usd": 0.05, "brake_dia_per_min": 0.2,
@@ -167,10 +165,6 @@ def ad_cooldown() -> int:
 def ad_revenue() -> float:
     """Geschätzte Einnahme pro Video in $."""
     return CFG["ecpm_usd"] / 1000
-
-
-def coins_per_video() -> float:
-    return CFG["coin_share"] * ad_revenue() / CFG["coin_usd"]
 
 DAILY_STEP = 1                        # Tagesbonus = Serientag × 1 → Tag 1: 1 💎 … Tag 7: 7 💎
 REFERRAL_DIAMONDS = 5                 # für Einlader und Eingeladenen

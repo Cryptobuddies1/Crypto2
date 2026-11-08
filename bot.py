@@ -170,7 +170,10 @@ def init_db() -> None:
                 if col == "xp":   # vorhandene Figuren dürfen sofort einmal leveln
                     con.execute("UPDATE kumpels SET xp=3600")
         con.execute("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated REAL, by_admin INTEGER)")
+        con.execute("DELETE FROM settings WHERE key IN ('coin_share','coin_usd')")
         load_settings(con)
+        # Coins wurden entfernt: noch vorhandene Coins einmalig in $ gutschreiben (1 Coin = 0,0001 $)
+        con.execute("UPDATE users SET usdt=usdt+coins*0.0001, points_total=points_total+coins*0.0001, coins=0 WHERE coins>0")
         pcols = [r[1] for r in con.execute("PRAGMA table_info(payouts)")]
         for col, decl in [("asset", "TEXT"), ("asset_amount", "REAL"), ("rate", "REAL")]:
             if col not in pcols:
@@ -309,7 +312,7 @@ def econ_view() -> dict:
             "mult": [c["mult_mid_level"], c["mult_mid"], c["mult_max"]],
             "packs": {k: game.PACKS[k] for k in ("start", "bronze", "silber", "gold")},
             "xp_band": c["xp_band"], "xp_waits": c["xp_waits"], "skip_limits": c["skip_limits"],
-            "coin_usd": c["coin_usd"], "coins_per_video": game.coins_per_video(), "brake_dia_per_min": c["brake_dia_per_min"]}
+            "brake_dia_per_min": c["brake_dia_per_min"]}
 
 
 def ads_last_24h(con, user_id: int, t: float) -> int:
@@ -362,7 +365,7 @@ def state(con, user_id: int) -> dict:
         "ref_earned": round(u["ref_earned"], 6), "ref_share": game.REFERRAL_SHARE, "ref_diamonds": game.REFERRAL_DIAMONDS,
         "kumpels": kumpels, "payouts": payouts, "top": top,
         "min_payout": MIN_PAYOUT, "payout_asset": PAYOUT_ASSET, "payout_mode": PAYOUT_MODE, "min_ads_24h": game.CFG["min_ads_24h"],
-        **wake_info(u, t), "braked": braked(u), "coins": round(u["coins"], 4),
+        **wake_info(u, t), "braked": braked(u),
         "skips_today": skips_today, "skips_max": game.CFG["skip_max_day"], "skip_diamonds": game.CFG["skip_diamonds"],
         "econ": econ_view(),
         "jackpots": [{"char": j["char"], "usd": j["usd"]} for j in game.JACKPOTS],   # ohne Chancen
@@ -503,10 +506,10 @@ def act_ad(con, user_id, u, purpose="diamonds", char=None):
                     (user_id, t, game.period_of(t), "client"))
     ads_today = u["ads_today"] if u["ads_day"] == today else 0
     rev = game.ad_revenue()
-    con.execute("UPDATE users SET last_ad=?, ads_day=?, ads_today=?, ad_rev=ad_rev+?, coins=coins+? WHERE id=?",
-                (t, today, ads_today + 1, rev, game.coins_per_video(), user_id))
+    con.execute("UPDATE users SET last_ad=?, ads_day=?, ads_today=?, ad_rev=ad_rev+? WHERE id=?",
+                (t, today, ads_today + 1, rev, user_id))
     events.add(con, user_id, "ads", 1, t)
-    res = {"purpose": purpose, "diamonds": 0, "coins": round(game.coins_per_video(), 4)}
+    res = {"purpose": purpose, "diamonds": 0}
     if purpose == "diamonds":
         res["diamonds"] = game.ad_reward(ads_today)
     elif purpose == "wake":
@@ -643,7 +646,7 @@ async def characters_js():
     return FileResponse(BASE / "webapp" / "characters.js", media_type="application/javascript")
 
 
-APP_VERSION = "2026-11-08.1"
+APP_VERSION = "2026-11-08.2"
 
 
 @app.get("/version")
@@ -1143,20 +1146,7 @@ def close_rounds(t: float | None = None) -> list[dict]:
             info = {"period": p, "views": views, "revenue": revenue, "paid": paid, "players": len(rows), "factor": factor}
             closed.append(info)
             log.info("Runde %s: %s Werbungen, ~%.2f $ Einnahmen, %.4f $ gutgeschrieben, %s Spieler", p, views, revenue, paid, len(rows))
-        con.execute("INSERT OR IGNORE INTO meta VALUES ('coins_period', ?)", (current,))
-        if con.execute("SELECT value FROM meta WHERE key='coins_period'").fetchone()[0] < current:
-            convert_coins(con)   # Coins: alle 4 Std in $ umrechnen
-            con.execute("UPDATE meta SET value=? WHERE key='coins_period'", (current,))
     return closed
-
-
-def convert_coins(con) -> float:
-    rate = game.CFG["coin_usd"]
-    total = con.execute("SELECT COALESCE(SUM(coins),0) FROM users WHERE coins>0").fetchone()[0] * rate
-    con.execute("UPDATE users SET usdt=usdt+coins*?, points_total=points_total+coins*?, coins=0 WHERE coins>0", (rate, rate))
-    if total:
-        log.info("Coins umgerechnet: %.4f $", total)
-    return total
 
 
 def queue_payouts() -> None:
