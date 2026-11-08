@@ -24,9 +24,9 @@ DEFAULTS = {
     "cost_block_mult": 2.0, "cost_high_from": 300, "cost_high_mult": 2.5,
     # Packs: Preis und Chancen in Prozent
     "packs": {
-        "bronze": {"price": 40,  "odds": {"klassik": 75.69, "frost": 20, "lava": 4,  "gold": 0.3, "kosmos": 0.01}},
-        "silber": {"price": 100, "odds": {"klassik": 48.38, "frost": 35, "lava": 15, "gold": 1.6, "kosmos": 0.02}},
-        "gold":   {"price": 200, "odds": {"frost": 60.07, "lava": 35, "gold": 4.9, "kosmos": 0.03}},
+        "bronze": {"price": 40,  "odds": {"klassik": 75.45, "frost": 20, "lava": 4,  "gold": 0.45, "kosmos": 0.1}},
+        "silber": {"price": 100, "odds": {"klassik": 47.4,  "frost": 35, "lava": 15, "gold": 2.4,  "kosmos": 0.2}},
+        "gold":   {"price": 200, "odds": {"frost": 57.35, "lava": 35, "gold": 7.35, "kosmos": 0.3}},
     },
     # Werbung
     "ad_diamonds": 2,             # 💎 pro normalem Video
@@ -40,9 +40,6 @@ DEFAULTS = {
     "skip_limits": [20, 40, 60],  # Restzeit bis … Min → 1 / 2 / 3 Videos zum Sofort-Füllen
     "skip_max_day": 30,           # Sofort-Füllen pro Tag
     "skip_diamonds": 2,           # 💎 pro Skip-Video
-    # Sanfte Bremse: verdient ein Spieler mehr als brake_ratio × seine eigenen Werbeeinnahmen (+ Startpuffer),
-    # bringen seine Buddies Diamanten statt $
-    "brake_ratio": 2.0, "brake_grace_usd": 0.05, "brake_dia_per_min": 0.2,
     # Sonstiges
     "min_ads_24h": 0,             # alte Regel: Videos in 24 h für die Rundenauszahlung (0 = aus, das Wach-System ersetzt sie)
     "max_payout_per_round": 0.0,  # Notbremse in $ pro Runde (0 = keine)

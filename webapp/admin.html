@@ -309,7 +309,6 @@ const ECON_GROUPS = [
   ["Videos", [["ad_diamonds","💎 pro normalem Video"],["ad_cooldown","Pause zwischen Videos (Sek.)"]]],
   ["Wach-System", [["wake_hours","Std wach pro Wach-Video"],["wake_max_hours","Max. Std auf Vorrat"],["start_awake_hours","Neue Spieler starten wach (Std)"]]],
   ["XP-Wartezeit", [["xp_band","Stufen pro Block"],["xp_waits","Minuten je Block (Komma-Liste)"],["skip_limits","Sofort-Füllen: Restzeit bis … Min → 1/2/3 Videos"],["skip_max_day","Sofort-Füllen pro Tag"],["skip_diamonds","💎 pro Skip-Video"]]],
-  ["Sanfte Bremse", [["brake_ratio","Bremse ab Auszahlung > × eigene Einnahmen (0 = aus)"],["brake_grace_usd","Startpuffer in $"],["brake_dia_per_min","💎 pro Minute statt $"]]],
   ["Notbremsen", [["min_ads_24h","Pflicht-Videos in 24 Std (0 = aus)"],["max_payout_per_round","Max. Auszahlung pro Runde in $ (0 = aus)"]]],
 ];
 let ECON = null;
@@ -319,8 +318,7 @@ async function econ(){
   ECON = await api("econ_get");
   const ro = ME.owner ? "" : "disabled";
   $("view").innerHTML = `<div class="kpis"><div class="kpi"><span>Videos 7 Tage</span><b>${num(ECON.info.ads_7d)}</b></div>
-      <div class="kpi"><span>Gerade wach</span><b>${num(ECON.info.awake_now)}</b></div>
-      <div class="kpi ${ECON.info.braked_7d?"warn":""}"><span>Gebremst (aktiv 7 T.)</span><b>${num(ECON.info.braked_7d)}</b></div></div>
+      <div class="kpi"><span>Gerade wach</span><b>${num(ECON.info.awake_now)}</b></div></div>
     <p class="hint">Änderungen gelten sofort für alle Spieler, ohne neues Deployment. ${ME.owner?"Geänderte Felder sind markiert ●.":"Nur der Besitzer (ADMIN_ID) darf speichern."}</p>
     ${ECON_GROUPS.map(([g, fields])=>`<h2>${g}</h2><div class="card">${fields.map(([k,l])=>{
       const v = ECON.values[k], d = ECON.defaults[k], ch = ECON.changed.includes(k);

@@ -161,8 +161,6 @@ def init_db() -> None:
                 con.execute(f"ALTER TABLE users ADD COLUMN {col} {decl}")
         if "awake_until" not in cols:   # Umstellung aufs Wach-System: alle starten wach
             con.execute("UPDATE users SET awake_until=?, last_settle=?", (game.now() + game.CFG["start_awake_hours"] * 3600, game.now()))
-        if "ad_rev" not in cols:   # Bremse startet für alle bei null: Bisheriges zählt nicht gegen den Spieler
-            con.execute("UPDATE users SET ad_rev=points_total/?", (max(game.CFG["brake_ratio"], 0.01),))
         kcols = [r[1] for r in con.execute("PRAGMA table_info(kumpels)")]
         for col, decl in [("xp", "REAL NOT NULL DEFAULT 0"), ("skip_ads", "INTEGER NOT NULL DEFAULT 0")]:
             if col not in kcols:
@@ -170,7 +168,7 @@ def init_db() -> None:
                 if col == "xp":   # vorhandene Figuren dürfen sofort einmal leveln
                     con.execute("UPDATE kumpels SET xp=3600")
         con.execute("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated REAL, by_admin INTEGER)")
-        con.execute("DELETE FROM settings WHERE key IN ('coin_share','coin_usd')")
+        con.execute("DELETE FROM settings WHERE key IN ('coin_share','coin_usd','brake_ratio','brake_grace_usd','brake_dia_per_min')")
         load_settings(con)
         # Coins wurden entfernt: noch vorhandene Coins einmalig in $ gutschreiben (1 Coin = 0,0001 $)
         con.execute("UPDATE users SET usdt=usdt+coins*0.0001, points_total=points_total+coins*0.0001, coins=0 WHERE coins>0")
@@ -253,38 +251,26 @@ async def notify_referrer(referrer: int, name: str):
         pass
 
 
-def braked(u) -> bool:
-    """Sanfte Bremse: hat der Spieler mehr als brake_ratio × seine eigenen Werbeeinnahmen bekommen?"""
-    c = game.CFG
-    return c["brake_ratio"] > 0 and u["points_total"] > c["brake_ratio"] * u["ad_rev"] + c["brake_grace_usd"]
-
-
 def settle(con, user_id: int, t: float | None = None) -> None:
     """Schreibt den Profit aller Figuren bis jetzt gut – nur für die Wachzeit, aufgeteilt auf die 4-Stunden-Runden.
-    Wachzeit füllt außerdem die XP. Greift die sanfte Bremse, gibt es Diamanten statt $."""
+    Wachzeit füllt außerdem die XP."""
     t = t or game.now()
     u = con.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
     if not u:
         return
     awake_end = min(t, u["awake_until"])
-    brake = braked(u)
     per_round: dict[int, float] = {}
     kumpels = con.execute("SELECT * FROM kumpels WHERE user_id=?", (user_id,)).fetchall()
     for k in kumpels:
         if k["last_collect"] >= t:
             continue
         awake = max(0.0, awake_end - k["last_collect"])
-        if awake > 0 and not brake:
+        if awake > 0:
             per_sec = game.daily_profit(k["char_id"], k["level"]) / 86400
             for p, secs in game.split_by_period(k["last_collect"], awake_end):
                 per_round[p] = per_round.get(p, 0) + per_sec * secs
         xp = min(k["xp"] + awake, max(k["xp"], game.xp_wait(k["level"])))
         con.execute("UPDATE kumpels SET last_collect=?, xp=? WHERE user_id=? AND char_id=?", (t, xp, user_id, k["char_id"]))
-    if brake and kumpels:   # Bremse: 0,2 💎 pro Minute Wachzeit
-        start = u["last_settle"] or t
-        frac = u["dia_frac"] + max(0.0, awake_end - start) / 60 * game.CFG["brake_dia_per_min"]
-        whole = int(frac)
-        con.execute("UPDATE users SET diamonds=diamonds+?, dia_frac=? WHERE id=?", (whole, frac - whole, user_id))
     con.execute("UPDATE users SET last_settle=? WHERE id=?", (t, user_id))
     total = 0.0
     for p, pts in per_round.items():
@@ -312,7 +298,7 @@ def econ_view() -> dict:
             "mult": [c["mult_mid_level"], c["mult_mid"], c["mult_max"]],
             "packs": {k: game.PACKS[k] for k in ("start", "bronze", "silber", "gold")},
             "xp_band": c["xp_band"], "xp_waits": c["xp_waits"], "skip_limits": c["skip_limits"],
-            "brake_dia_per_min": c["brake_dia_per_min"]}
+            }
 
 
 def ads_last_24h(con, user_id: int, t: float) -> int:
@@ -365,7 +351,7 @@ def state(con, user_id: int) -> dict:
         "ref_earned": round(u["ref_earned"], 6), "ref_share": game.REFERRAL_SHARE, "ref_diamonds": game.REFERRAL_DIAMONDS,
         "kumpels": kumpels, "payouts": payouts, "top": top,
         "min_payout": MIN_PAYOUT, "payout_asset": PAYOUT_ASSET, "payout_mode": PAYOUT_MODE, "min_ads_24h": game.CFG["min_ads_24h"],
-        **wake_info(u, t), "braked": braked(u),
+        **wake_info(u, t),
         "skips_today": skips_today, "skips_max": game.CFG["skip_max_day"], "skip_diamonds": game.CFG["skip_diamonds"],
         "econ": econ_view(),
         "jackpots": [{"char": j["char"], "usd": j["usd"]} for j in game.JACKPOTS],   # ohne Chancen
@@ -646,7 +632,7 @@ async def characters_js():
     return FileResponse(BASE / "webapp" / "characters.js", media_type="application/javascript")
 
 
-APP_VERSION = "2026-11-08.2"
+APP_VERSION = "2026-11-08.3"
 
 
 @app.get("/version")
@@ -879,10 +865,9 @@ async def admin_api(action: str, request: Request, x_init_data: str | None = Hea
             with db() as con:
                 saved = {r["key"] for r in con.execute("SELECT key FROM settings")}
                 ads7 = con.execute("SELECT COUNT(*) FROM ad_views WHERE ts>?", (game.now() - 7 * 86400,)).fetchone()[0]
-                braked_n = sum(1 for u in con.execute("SELECT points_total, ad_rev FROM users WHERE last_seen>?", (game.now() - 7 * 86400,)) if braked(u))
                 awake_n = con.execute("SELECT COUNT(*) FROM users WHERE awake_until>?", (game.now(),)).fetchone()[0]
             return {"defaults": game.DEFAULTS, "values": game.CFG, "changed": sorted(saved),
-                    "info": {"ads_7d": ads7, "braked_7d": braked_n, "awake_now": awake_n}}
+                    "info": {"ads_7d": ads7, "awake_now": awake_n}}
         if action == "econ_set":
             owner_only()
             try:
