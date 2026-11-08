@@ -7,6 +7,7 @@ import hashlib
 import hmac
 import json
 import logging
+import math
 import os
 import sqlite3
 from contextlib import asynccontextmanager
@@ -50,9 +51,7 @@ ADS_VERIFY = env("ADS_VERIFY", "false").lower() == "true"     # true = nur per A
 ADSGRAM_SECRET = env("ADSGRAM_SECRET", "")
 
 # Auszahlung je 4-Stunden-Runde: Figuren-Erträge werden voll in USDT gutgeschrieben
-ECPM_USD = float(env("ECPM_USD", "1.5"))           # nur für den Alarm: geschätzte Einnahmen pro 1.000 Werbungen
-MAX_PAYOUT_PER_ROUND = float(env("MAX_PAYOUT_PER_ROUND", "0"))   # Notbremse in $ (0 = keine Grenze)
-MIN_ADS_24H = int(env("MIN_ADS_24H", "1"))          # wer in 24 h keine Werbung sah, bekommt den Rundenertrag nicht
+# eCPM, Notbremse und Mindest-Videos stehen jetzt in game.DEFAULTS und werden im Admin-Panel (Reiter "Wirtschaft") geändert
 MIN_PAYOUT = float(env("MIN_PAYOUT", "1.0"))        # USDT, darunter wird angespart
 
 # CryptoBot
@@ -153,9 +152,25 @@ def init_db() -> None:
                           ("autopayout", "INTEGER NOT NULL DEFAULT 1"), ("ref_earned", "REAL NOT NULL DEFAULT 0"),
                           ("lang", "TEXT NOT NULL DEFAULT 'en'"),
                           ("last_seen", "REAL NOT NULL DEFAULT 0"), ("blocked", "INTEGER NOT NULL DEFAULT 0"),
-                          ("username", "TEXT")]:
+                          ("username", "TEXT"),
+                          ("awake_until", "REAL NOT NULL DEFAULT 0"), ("last_settle", "REAL NOT NULL DEFAULT 0"),
+                          ("coins", "REAL NOT NULL DEFAULT 0"), ("ad_rev", "REAL NOT NULL DEFAULT 0"),
+                          ("dia_frac", "REAL NOT NULL DEFAULT 0"), ("skips_day", "TEXT"),
+                          ("skips_today", "INTEGER NOT NULL DEFAULT 0")]:
             if col not in cols:   # Spalten für ältere Datenbanken nachrüsten
                 con.execute(f"ALTER TABLE users ADD COLUMN {col} {decl}")
+        if "awake_until" not in cols:   # Umstellung aufs Wach-System: alle starten wach
+            con.execute("UPDATE users SET awake_until=?, last_settle=?", (game.now() + game.CFG["start_awake_hours"] * 3600, game.now()))
+        if "ad_rev" not in cols:   # Bremse startet für alle bei null: Bisheriges zählt nicht gegen den Spieler
+            con.execute("UPDATE users SET ad_rev=points_total/?", (max(game.CFG["brake_ratio"], 0.01),))
+        kcols = [r[1] for r in con.execute("PRAGMA table_info(kumpels)")]
+        for col, decl in [("xp", "REAL NOT NULL DEFAULT 0"), ("skip_ads", "INTEGER NOT NULL DEFAULT 0")]:
+            if col not in kcols:
+                con.execute(f"ALTER TABLE kumpels ADD COLUMN {col} {decl}")
+                if col == "xp":   # vorhandene Figuren dürfen sofort einmal leveln
+                    con.execute("UPDATE kumpels SET xp=3600")
+        con.execute("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated REAL, by_admin INTEGER)")
+        load_settings(con)
         pcols = [r[1] for r in con.execute("PRAGMA table_info(payouts)")]
         for col, decl in [("asset", "TEXT"), ("asset_amount", "REAL"), ("rate", "REAL")]:
             if col not in pcols:
@@ -163,6 +178,19 @@ def init_db() -> None:
         for j in game.JACKPOTS:   # Startpositionen einmalig festlegen (geheim)
             con.execute("INSERT OR IGNORE INTO jackpots (char_id, every, next_pos) VALUES (?,?,?)",
                         (j["char"], j["every"], game.first_jackpot_pos(j["every"])))
+
+
+def load_settings(con) -> dict:
+    """Liest die im Admin-Panel geänderten Wirtschafts-Werte und aktiviert sie."""
+    saved = {}
+    for r in con.execute("SELECT key, value FROM settings"):
+        if r["key"] in game.DEFAULTS:
+            try:
+                saved.update(game.clean_settings({r["key"]: json.loads(r["value"])}))
+            except Exception as e:
+                log.warning("Einstellung %s ungültig, Standard wird benutzt: %s", r["key"], e)
+    game.apply_settings(saved)
+    return saved
 
 
 def jackpot_check(con) -> str | None:
@@ -188,8 +216,9 @@ def ensure_user(con, user_id: int, name: str, ref_by: int | None = None) -> dict
         con.execute("UPDATE users SET name=? WHERE id=?", (name, user_id))
         return {"new": False, "referrer": None}
     valid_ref = bool(ref_by and ref_by != user_id and con.execute("SELECT 1 FROM users WHERE id=?", (ref_by,)).fetchone())
-    con.execute("INSERT INTO users (id, name, created, ref_by) VALUES (?,?,?,?)",
-                (user_id, name, game.now(), ref_by if valid_ref else None))
+    con.execute("INSERT INTO users (id, name, created, ref_by, awake_until, last_settle) VALUES (?,?,?,?,?,?)",
+                (user_id, name, game.now(), ref_by if valid_ref else None,
+                 game.now() + game.CFG["start_awake_hours"] * 3600, game.now()))
     if valid_ref:
         con.execute("UPDATE users SET diamonds=diamonds+? WHERE id IN (?,?)", (game.REFERRAL_DIAMONDS, user_id, ref_by))
         events.add(con, ref_by, "invites", 1)
@@ -221,17 +250,39 @@ async def notify_referrer(referrer: int, name: str):
         pass
 
 
+def braked(u) -> bool:
+    """Sanfte Bremse: hat der Spieler mehr als brake_ratio × seine eigenen Werbeeinnahmen bekommen?"""
+    c = game.CFG
+    return c["brake_ratio"] > 0 and u["points_total"] > c["brake_ratio"] * u["ad_rev"] + c["brake_grace_usd"]
+
+
 def settle(con, user_id: int, t: float | None = None) -> None:
-    """Schreibt den Profit aller Figuren bis jetzt gut – aufgeteilt auf die 4-Stunden-Runden."""
+    """Schreibt den Profit aller Figuren bis jetzt gut – nur für die Wachzeit, aufgeteilt auf die 4-Stunden-Runden.
+    Wachzeit füllt außerdem die XP. Greift die sanfte Bremse, gibt es Diamanten statt $."""
     t = t or game.now()
+    u = con.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+    if not u:
+        return
+    awake_end = min(t, u["awake_until"])
+    brake = braked(u)
     per_round: dict[int, float] = {}
-    for k in con.execute("SELECT * FROM kumpels WHERE user_id=?", (user_id,)).fetchall():
+    kumpels = con.execute("SELECT * FROM kumpels WHERE user_id=?", (user_id,)).fetchall()
+    for k in kumpels:
         if k["last_collect"] >= t:
             continue
-        per_sec = game.daily_profit(k["char_id"], k["level"]) / 86400
-        for p, secs in game.split_by_period(k["last_collect"], t):
-            per_round[p] = per_round.get(p, 0) + per_sec * secs
-        con.execute("UPDATE kumpels SET last_collect=? WHERE user_id=? AND char_id=?", (t, user_id, k["char_id"]))
+        awake = max(0.0, awake_end - k["last_collect"])
+        if awake > 0 and not brake:
+            per_sec = game.daily_profit(k["char_id"], k["level"]) / 86400
+            for p, secs in game.split_by_period(k["last_collect"], awake_end):
+                per_round[p] = per_round.get(p, 0) + per_sec * secs
+        xp = min(k["xp"] + awake, max(k["xp"], game.xp_wait(k["level"])))
+        con.execute("UPDATE kumpels SET last_collect=?, xp=? WHERE user_id=? AND char_id=?", (t, xp, user_id, k["char_id"]))
+    if brake and kumpels:   # Bremse: 0,2 💎 pro Minute Wachzeit
+        start = u["last_settle"] or t
+        frac = u["dia_frac"] + max(0.0, awake_end - start) / 60 * game.CFG["brake_dia_per_min"]
+        whole = int(frac)
+        con.execute("UPDATE users SET diamonds=diamonds+?, dia_frac=? WHERE id=?", (whole, frac - whole, user_id))
+    con.execute("UPDATE users SET last_settle=? WHERE id=?", (t, user_id))
     total = 0.0
     for p, pts in per_round.items():
         total += pts
@@ -240,6 +291,25 @@ def settle(con, user_id: int, t: float | None = None) -> None:
     if total:
         con.execute("UPDATE users SET points_total=points_total+? WHERE id=?", (total, user_id))
         events.add(con, user_id, "profit", total, t)
+
+
+def wake_info(u, t: float) -> dict:
+    left = max(0.0, u["awake_until"] - t)
+    per = game.CFG["wake_hours"] * 3600
+    room = game.CFG["wake_max_hours"] * 3600 - left
+    return {"awake_until": u["awake_until"], "awake_left": left, "wake_hours": game.CFG["wake_hours"],
+            "wake_max_hours": game.CFG["wake_max_hours"], "wake_videos_to_full": max(0, math.ceil(room / per - 0.01)) if per else 0,
+            "wake_full": room < 60}
+
+
+def econ_view() -> dict:
+    """Zahlen, die die App für Anzeigen braucht (Verdienst-Übersicht, Kosten, Chancen)."""
+    c = game.CFG
+    return {"bases": {ch["id"]: game.base_daily(ch["id"]) for ch in game.CHARACTERS},
+            "mult": [c["mult_mid_level"], c["mult_mid"], c["mult_max"]],
+            "packs": {k: game.PACKS[k] for k in ("start", "bronze", "silber", "gold")},
+            "xp_band": c["xp_band"], "xp_waits": c["xp_waits"], "skip_limits": c["skip_limits"],
+            "coin_usd": c["coin_usd"], "coins_per_video": game.coins_per_video(), "brake_dia_per_min": c["brake_dia_per_min"]}
 
 
 def ads_last_24h(con, user_id: int, t: float) -> int:
@@ -256,12 +326,17 @@ def state(con, user_id: int) -> dict:
     kumpels = []
     for k in con.execute("SELECT * FROM kumpels WHERE user_id=?", (user_id,)):
         lvl = k["level"]
+        need = game.xp_wait(lvl) if lvl < game.MAX_LEVEL else 0
+        rest = max(0.0, need - k["xp"])
         kumpels.append({
             "id": k["char_id"], "level": lvl, "copies": k["copies"],
             "daily": game.daily_profit(k["char_id"], lvl),
             "next_daily": game.daily_profit(k["char_id"], lvl + 1) if lvl < game.MAX_LEVEL else None,
             "level_cost": game.level_cost(k["char_id"], lvl) if lvl < game.MAX_LEVEL else None,
+            "xp": min(k["xp"], need), "xp_need": need, "skip_ads": k["skip_ads"],
+            "skip_videos": game.skip_videos(rest) if rest > 0 else 0,
         })
+    skips_today = u["skips_today"] if u["skips_day"] == today else 0
     p = game.period_of(t)
     rp = con.execute("SELECT points FROM round_points WHERE user_id=? AND period=?", (user_id, p)).fetchone()
     last = con.execute("""SELECT r.period, r.pool AS paid, r.points, s.usdt FROM rounds r
@@ -276,17 +351,20 @@ def state(con, user_id: int) -> dict:
         "diamonds": u["diamonds"], "usdt": round(u["usdt"], 6), "usdt_paid": round(u["usdt_paid"], 2),
         "points_total": u["points_total"],
         "round_points": rp["points"] if rp else 0, "round_end": game.period_end(p),
-        "eligible": ads_last_24h(con, user_id, t) >= MIN_ADS_24H,
+        "eligible": ads_last_24h(con, user_id, t) >= game.CFG["min_ads_24h"],
         "last_round": dict(last) if last else None,
         "streak": u["streak"] if u["last_daily"] in (today, yesterday) else 0,
         "daily_available": u["last_daily"] != today,
-        "ads_today": ads_today, "next_ad_at": u["last_ad"] + game.AD_COOLDOWN,
+        "ads_today": ads_today, "next_ad_at": u["last_ad"] + game.ad_cooldown(), "ad_cooldown": game.ad_cooldown(),
         "next_ad_reward": game.ad_reward(ads_today),
         "starter_available": not u["starter_used"],
         "friends": con.execute("SELECT COUNT(*) FROM users WHERE ref_by=?", (user_id,)).fetchone()[0],
         "ref_earned": round(u["ref_earned"], 6), "ref_share": game.REFERRAL_SHARE, "ref_diamonds": game.REFERRAL_DIAMONDS,
         "kumpels": kumpels, "payouts": payouts, "top": top,
-        "min_payout": MIN_PAYOUT, "payout_asset": PAYOUT_ASSET, "payout_mode": PAYOUT_MODE, "min_ads_24h": MIN_ADS_24H,
+        "min_payout": MIN_PAYOUT, "payout_asset": PAYOUT_ASSET, "payout_mode": PAYOUT_MODE, "min_ads_24h": game.CFG["min_ads_24h"],
+        **wake_info(u, t), "braked": braked(u), "coins": round(u["coins"], 4),
+        "skips_today": skips_today, "skips_max": game.CFG["skip_max_day"], "skip_diamonds": game.CFG["skip_diamonds"],
+        "econ": econ_view(),
         "jackpots": [{"char": j["char"], "usd": j["usd"]} for j in game.JACKPOTS],   # ohne Chancen
         "collected": collected(con, user_id), "collection_total": len(game.REGULAR_IDS),
         "collection_bonus": game.COLLECTION_BONUS_USDT, "collection_bonus_paid": bool(u["collection_bonus"]),
@@ -368,26 +446,52 @@ def act_levelup(con, user_id, u, char, steps):
     k = con.execute("SELECT * FROM kumpels WHERE user_id=? AND char_id=?", (user_id, char)).fetchone()
     if not k:
         raise E(400, "no_figure")
-    level, diamonds, spent, done = k["level"], u["diamonds"], 0, 0
+    level, diamonds, spent, done, xp = k["level"], u["diamonds"], 0, 0, k["xp"]
     steps = max(1, min(int(steps or 1), game.MAX_LEVEL))
+    why = "no_diamonds"
     while done < steps and level < game.MAX_LEVEL:
+        need = game.xp_wait(level)
+        if xp < need:   # XP noch nicht voll
+            why = "xp_wait"
+            break
         cost = game.level_cost(char, level)
         if diamonds - spent < cost:
+            why = "no_diamonds"
             break
-        spent += cost; level += 1; done += 1
+        spent += cost; level += 1; done += 1; xp = 0.0
     if not done:
-        raise E(400, "max_level" if level >= game.MAX_LEVEL else "no_diamonds")
+        if level >= game.MAX_LEVEL:
+            raise E(400, "max_level")
+        raise E(400, why, m=math.ceil((game.xp_wait(level) - xp) / 60))
     con.execute("UPDATE users SET diamonds=diamonds-? WHERE id=?", (spent, user_id))
-    con.execute("UPDATE kumpels SET level=? WHERE user_id=? AND char_id=?", (level, user_id, char))
+    con.execute("UPDATE kumpels SET level=?, xp=?, skip_ads=0 WHERE user_id=? AND char_id=?", (level, xp, user_id, char))
     return {"levels": done, "spent": spent}
 
 
-def act_ad(con, user_id, u):
+def act_ad(con, user_id, u, purpose="diamonds", char=None):
+    """Ein gesehenes Video. purpose: diamonds (💎), wake (alle Buddies +2,4 Std wach, keine 💎),
+    skip (XP einer Figur sofort füllen, gibt 💎)."""
     t = game.now()
+    cfg = game.CFG
+    today = date.today().isoformat()
     if not (ADSGRAM_BLOCK_ID or MONETAG_ZONE_ID or RICHADS_PUB_ID or DEV_MODE):   # ohne Werbeanbieter keine Diamanten
         raise E(400, "ads_off")
-    if t < u["last_ad"] + game.AD_COOLDOWN:
-        raise E(400, "ad_wait", s=int(u['last_ad'] + game.AD_COOLDOWN - t) + 1)
+    if purpose not in ("diamonds", "wake", "skip"):
+        raise E(400, "unknown_action")
+    if t < u["last_ad"] + game.ad_cooldown():
+        raise E(400, "ad_wait", s=int(u['last_ad'] + game.ad_cooldown() - t) + 1)
+    k = None
+    skips_today = u["skips_today"] if u["skips_day"] == today else 0
+    if purpose == "wake" and wake_info(u, t)["wake_full"]:
+        raise E(400, "wake_full", h=cfg["wake_max_hours"])
+    if purpose == "skip":
+        k = con.execute("SELECT * FROM kumpels WHERE user_id=? AND char_id=?", (user_id, char)).fetchone()
+        if not k:
+            raise E(400, "no_figure")
+        if k["level"] >= game.MAX_LEVEL or k["xp"] >= game.xp_wait(k["level"]):
+            raise E(400, "xp_full")
+        if skips_today >= cfg["skip_max_day"]:
+            raise E(400, "skip_limit", n=cfg["skip_max_day"])
     if ADS_VERIFY:   # nur von AdsGram bestätigte Ansichten der letzten 2 Minuten zählen
         row = con.execute("SELECT id FROM ad_views WHERE user_id=? AND source='s2s' AND used=0 AND ts>? ORDER BY ts LIMIT 1",
                           (user_id, t - 120)).fetchone()
@@ -397,13 +501,32 @@ def act_ad(con, user_id, u):
     else:
         con.execute("INSERT INTO ad_views (user_id, ts, period, source, used) VALUES (?,?,?,?,1)",
                     (user_id, t, game.period_of(t), "client"))
-    today = date.today().isoformat()
     ads_today = u["ads_today"] if u["ads_day"] == today else 0
-    reward = game.ad_reward(ads_today)
-    con.execute("UPDATE users SET diamonds=diamonds+?, last_ad=?, ads_day=?, ads_today=? WHERE id=?",
-                (reward, t, today, ads_today + 1, user_id))
+    rev = game.ad_revenue()
+    con.execute("UPDATE users SET last_ad=?, ads_day=?, ads_today=?, ad_rev=ad_rev+?, coins=coins+? WHERE id=?",
+                (t, today, ads_today + 1, rev, game.coins_per_video(), user_id))
     events.add(con, user_id, "ads", 1, t)
-    return {"diamonds": reward}
+    res = {"purpose": purpose, "diamonds": 0, "coins": round(game.coins_per_video(), 4)}
+    if purpose == "diamonds":
+        res["diamonds"] = game.ad_reward(ads_today)
+    elif purpose == "wake":
+        new = min(max(t, u["awake_until"]) + cfg["wake_hours"] * 3600, t + cfg["wake_max_hours"] * 3600)
+        con.execute("UPDATE users SET awake_until=? WHERE id=?", (new, user_id))
+        res["awake_until"] = new
+    else:
+        res["diamonds"] = int(cfg["skip_diamonds"])
+        need = game.xp_wait(k["level"])
+        watched = k["skip_ads"] + 1
+        if watched >= game.skip_videos(need - k["xp"]):   # genug Videos → XP voll
+            con.execute("UPDATE kumpels SET xp=?, skip_ads=0 WHERE user_id=? AND char_id=?", (need, user_id, char))
+            con.execute("UPDATE users SET skips_day=?, skips_today=? WHERE id=?", (today, skips_today + 1, user_id))
+            res["filled"] = True
+        else:
+            con.execute("UPDATE kumpels SET skip_ads=? WHERE user_id=? AND char_id=?", (watched, user_id, char))
+            res["filled"] = False
+    if res["diamonds"]:
+        con.execute("UPDATE users SET diamonds=diamonds+? WHERE id=?", (res["diamonds"], user_id))
+    return res
 
 
 def act_daily(con, user_id, u):
@@ -520,7 +643,7 @@ async def characters_js():
     return FileResponse(BASE / "webapp" / "characters.js", media_type="application/javascript")
 
 
-APP_VERSION = "2026-11-07.5"
+APP_VERSION = "2026-11-08.1"
 
 
 @app.get("/version")
@@ -644,7 +767,7 @@ async def handle(action, user_id, tg_user, start_param, body):
         elif action == "levelup":
             result = act_levelup(con, user_id, u, body.get("char"), body.get("steps", 1))
         elif action == "ad":
-            result = act_ad(con, user_id, u)
+            result = act_ad(con, user_id, u, body.get("purpose", "diamonds"), body.get("char"))
         elif action == "daily":
             result = act_daily(con, user_id, u)
         elif action == "buy_diamonds":
@@ -712,7 +835,7 @@ async def admin_stats() -> dict:
             "rounds": [dict(r) for r in con.execute("SELECT period, views, revenue, pool AS paid, players, closed_at FROM rounds ORDER BY period DESC LIMIT 6")],
         }
     st["settings"] = {"payout_mode": PAYOUT_MODE, "payout_asset": PAYOUT_ASSET, "shop": SHOP_ENABLED,
-                      "ads": ad_providers() or "–", "ecpm": ECPM_USD}
+                      "ads": ad_providers() or "–", "ecpm": game.CFG["ecpm_usd"]}
     st["cryptobot"] = None
     if CRYPTOPAY_TOKEN:
         try:
@@ -748,6 +871,37 @@ async def admin_api(action: str, request: Request, x_init_data: str | None = Hea
     try:
         if action == "me":
             return {"id": admin_id, "owner": is_owner(admin_id)}
+        # ---------------- Wirtschaft
+        if action == "econ_get":
+            with db() as con:
+                saved = {r["key"] for r in con.execute("SELECT key FROM settings")}
+                ads7 = con.execute("SELECT COUNT(*) FROM ad_views WHERE ts>?", (game.now() - 7 * 86400,)).fetchone()[0]
+                braked_n = sum(1 for u in con.execute("SELECT points_total, ad_rev FROM users WHERE last_seen>?", (game.now() - 7 * 86400,)) if braked(u))
+                awake_n = con.execute("SELECT COUNT(*) FROM users WHERE awake_until>?", (game.now(),)).fetchone()[0]
+            return {"defaults": game.DEFAULTS, "values": game.CFG, "changed": sorted(saved),
+                    "info": {"ads_7d": ads7, "braked_7d": braked_n, "awake_now": awake_n}}
+        if action == "econ_set":
+            owner_only()
+            try:
+                vals = game.clean_settings(body.get("values") or {})
+            except ValueError as e:
+                raise HTTPException(400, str(e))
+            with db() as con:
+                for k, v in vals.items():
+                    if v == game.DEFAULTS[k]:
+                        con.execute("DELETE FROM settings WHERE key=?", (k,))
+                    else:
+                        con.execute("INSERT OR REPLACE INTO settings VALUES (?,?,?,?)", (k, json.dumps(v), game.now(), admin_id))
+                load_settings(con)
+            log_action("econ_set", details=vals)
+            return {"ok": True, "values": game.CFG}
+        if action == "econ_reset":
+            owner_only()
+            with db() as con:
+                con.execute("DELETE FROM settings")
+                load_settings(con)
+            log_action("econ_reset")
+            return {"ok": True, "values": game.CFG}
         # ---------------- Admins
         if action == "admins_list":
             with db() as con:
@@ -966,13 +1120,14 @@ def close_rounds(t: float | None = None) -> list[dict]:
             end = game.period_end(p)
             src = "source='s2s'" if ADS_VERIFY else "source='client'"
             views = con.execute(f"SELECT COUNT(*) FROM ad_views WHERE period=? AND {src}", (p,)).fetchone()[0]
-            revenue = views * ECPM_USD / 1000
+            revenue = views * game.ad_revenue()
+            min_ads, cap = game.CFG["min_ads_24h"], game.CFG["max_payout_per_round"]
             rows = [r for r in con.execute("SELECT user_id, points FROM round_points WHERE period=? AND points>0", (p,))
-                    if ads_last_24h(con, r["user_id"], end) >= MIN_ADS_24H]
+                    if not min_ads or ads_last_24h(con, r["user_id"], end) >= min_ads]
             total = sum(r["points"] for r in rows)
             factor = 1.0
-            if MAX_PAYOUT_PER_ROUND > 0 and total > MAX_PAYOUT_PER_ROUND:   # Notbremse
-                factor = MAX_PAYOUT_PER_ROUND / total
+            if cap > 0 and total > cap:   # Notbremse
+                factor = cap / total
             paid = 0.0
             for r in rows:
                 amount = round(r["points"] * factor, 6)
@@ -988,7 +1143,20 @@ def close_rounds(t: float | None = None) -> list[dict]:
             info = {"period": p, "views": views, "revenue": revenue, "paid": paid, "players": len(rows), "factor": factor}
             closed.append(info)
             log.info("Runde %s: %s Werbungen, ~%.2f $ Einnahmen, %.4f $ gutgeschrieben, %s Spieler", p, views, revenue, paid, len(rows))
+        con.execute("INSERT OR IGNORE INTO meta VALUES ('coins_period', ?)", (current,))
+        if con.execute("SELECT value FROM meta WHERE key='coins_period'").fetchone()[0] < current:
+            convert_coins(con)   # Coins: alle 4 Std in $ umrechnen
+            con.execute("UPDATE meta SET value=? WHERE key='coins_period'", (current,))
     return closed
+
+
+def convert_coins(con) -> float:
+    rate = game.CFG["coin_usd"]
+    total = con.execute("SELECT COALESCE(SUM(coins),0) FROM users WHERE coins>0").fetchone()[0] * rate
+    con.execute("UPDATE users SET usdt=usdt+coins*?, points_total=points_total+coins*?, coins=0 WHERE coins>0", (rate, rate))
+    if total:
+        log.info("Coins umgerechnet: %.4f $", total)
+    return total
 
 
 def queue_payouts() -> None:

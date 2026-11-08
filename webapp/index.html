@@ -115,6 +115,27 @@ h2{font-size:18px;font-weight:800;letter-spacing:-.2px;margin:22px 0 4px}
 .bonus.done{background:linear-gradient(180deg,#fffaf0,#fff);border:1.5px solid #f2c94c}
 .seg button{white-space:nowrap}
 .fig.isjp{outline:2px solid #f2c94c}
+.fig[data-open]{cursor:pointer}
+.xpbar{height:5px;border-radius:4px;background:var(--soft);margin:6px 0 4px;overflow:hidden}
+.xpbar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#22d3ee,#7c3aed)}
+.xpt{font-size:10.5px;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.xpt.ok{color:var(--green)}
+.xbtn{display:block;width:100%;margin-top:6px;padding:7px 4px;border-radius:10px;font-size:11.5px;font-weight:700;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.xbtn.lvl{background:var(--ink);color:#fff}
+.xbtn:disabled{opacity:.5}
+.wake{background:linear-gradient(140deg,#1e2a6b,#3b2a8f 60%,#5b21b6);color:#fff;border-radius:22px;padding:18px;margin:0 0 18px}
+.wake.sleep{background:linear-gradient(140deg,#1f2937,#374151)}
+.wake .top{display:flex;align-items:center;gap:12px}
+.wake .sun{font-size:34px;line-height:1}
+.wake .tt{flex:1}.wake .tt b{display:block;font-size:16.5px}.wake .tt small{color:#c7cbe0;font-size:12px}
+.wake .left{text-align:right}.wake .left b{display:block;font-size:24px;font-weight:800;color:#fcd34d}.wake .left small{font-size:11px;color:#c7cbe0}
+.wake .segs{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin:14px 0 6px}
+.wake .segs i{height:8px;border-radius:5px;background:rgba(255,255,255,.18)}
+.wake .segs i.on{background:linear-gradient(90deg,#fbbf24,#f97316)}
+.wake .row{display:flex;justify-content:space-between;font-size:12px;color:#d7dbe4}
+.wake .wbtn{margin-top:12px;background:linear-gradient(90deg,#fbbf24,#f97316);color:#1e1b4b;font-size:15px}
+.wake p{font-size:11.5px;color:#c7cbe0;margin:10px 0 0;line-height:1.45}
+.xptab .kv span:last-child{color:var(--ink);font-weight:600}
 .tag.jptag{background:linear-gradient(90deg,#f6c445,#d69e2e);margin-left:4px}
 .odds{display:flex;height:6px;border-radius:6px;overflow:hidden;margin:2px 0 6px;background:var(--soft)}
 .legend{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:11px;color:var(--muted)}
@@ -263,11 +284,19 @@ const I18N = {
     ev_title:"Events", tournaments:"Tournaments", news:"News", no_events:"No tournament running right now – check back soon!", no_news:"No news yet.",
     ends_in:"Ends in {t}", starts_in:"Starts in {t}", ended:"Ended", your_rank:"Your rank", not_ranked:"Not ranked yet – {m} to join!", prizes:"Prizes",
     upcoming:"Upcoming", results:"Results", rank_short:"#{n}", admin_open:"⚙️ Admin panel", d_short:"d", h_short:"h", m_short:"m",
+    awake_title:"Your team is awake", awake_sub:"All Buddies are earning", sleep_title:"Your team is asleep", sleep_sub:"Sleeping Buddies earn nothing",
+    left_lbl:"left", stock:"Stock {n} / {m} videos", to_full:"{n} more to {h} h", full:"Fully stocked", wake_btn:"Watch video · +{h} h awake",
+    wake_note:"{n} videos = all Buddies {h} h awake (max. {h} h in stock). Sleeping Buddies earn nothing and collect no XP. Wake videos give no diamonds.",
+    woke:"+{h} h awake", xp_ready:"XP full", xp_left:"⏳ {t}", skip_btn:"▶ {n} video{s}", lv_btn:"⬆ 💎 {c}", filled:"XP full – ready to level up",
+    skip_prog:"Video {a}/{b} watched", payout_lbl:"Payout", pay_from:"from {n} · {a}", round_hint:"Credited every 4 h – only for the time your team was awake.",
+    braked:"Earnings limit reached: your Buddies currently earn {n} 💎/min instead of $. Watch more videos to unlock $ again.",
+    xp_title:"XP wait per level", xp_none:"none", xp_skip:"Instant fill", xp_skip_v:"1 / 2 / 3 videos (by time left) · {n}× per day",
+    coins:"Coins", coins_note:"10 % of the ad revenue of each video – converted to $ every 4 h", xp_lbl:"XP", xp_need:"XP wait",
     next_credit:"Next credit in", earned_round:"Earned this round", profit_day:"Profit per day", collection:"Collection",
     eligible:"✓ You take part in the payout", not_eligible:"ⓘ Watch at least {n} video today, otherwise this round's earnings expire.",
     no_figs:"No figures yet", no_figs_txt:"Open your free starter pack and get your first buddy.", to_packs:"Go to packs",
     earn_btn:"Earnings overview", earn_btn_sub:"What every Buddy earns – up to level 500", earn_title:"Earnings overview",
-    earn_sub:"Daily earnings of every Buddy at the chosen level. Every level adds +5 %.", earn_level:"Level", earn_all96:"All 96 Buddies", earn_alljp:"All 4 Jackpots",
+    earn_sub:"Daily earnings of every Buddy at the chosen level (24 h awake). From level 300 earnings rise much faster.", earn_level:"Level", earn_all96:"All 96 Buddies", earn_alljp:"All 4 Jackpots",
     per_month:"/month", earn_yours:"Your Buddies now", owned_lv:"Lv {n}",
     mine:"Mine", jackpot:"Jackpot", per_day:"/day", jp_info:"4 extra figures – they don't count towards the collection and can be in any pack.",
     packs_sub:"Every pack contains a random figure. Duplicate: 40 % of the diamonds back.", free:"FREE", open_free:"Open for free", open:"Open",
@@ -284,7 +313,7 @@ const I18N = {
     paid_next:"Will be paid out in the next round", payout_from:"Payout from {n} – saved until then", auto_payout:"Automatic payout",
     deposit_only:"Deposit (diamonds only)", next_round:"Next round in", credited_last:"Credited last round", paid_total:"Paid out so far",
     how_get:"How to get your money", step1:"Open <b>@CryptoBot</b> in Telegram once and press Start.", step2:"Done. From {n} your payout arrives there automatically in {a}.",
-    wallet_note:"Your figures' earnings are credited every 4 hours. Requirement: at least {n} video in the last 24 hours.",
+    wallet_note:"Your Buddies' earnings are credited every 4 hours – for the time your team was awake.",
     payouts:"Payouts", st_done:"Sent", st_pending:"Processing", st_failed:"Failed", leaderboard:"Leaderboard",
     jp_title:"Jackpot figures", jp_sub:"4 extra figures with a fixed daily profit. They can be in any Bronze, Silver or Gold pack.", in_coll:"✓ In your collection",
     coll_done:"🏆 Collection complete", coll_done_txt:"Your bonus of {n} $ has been credited.", coll_bonus:"Collection bonus", coll_sub:"Collect all {t} figures – {r} to go.",
@@ -302,11 +331,19 @@ const I18N = {
     ev_title:"Events", tournaments:"Turniere", news:"News", no_events:"Gerade läuft kein Turnier – schau bald wieder vorbei!", no_news:"Noch keine News.",
     ends_in:"Endet in {t}", starts_in:"Startet in {t}", ended:"Beendet", your_rank:"Dein Platz", not_ranked:"Noch nicht platziert – {m}, um mitzumachen!", prizes:"Preise",
     upcoming:"Demnächst", results:"Ergebnisse", rank_short:"#{n}", admin_open:"⚙️ Admin-Panel", d_short:"T", h_short:"Std", m_short:"Min",
+    awake_title:"Dein Team ist wach", awake_sub:"Alle Buddies verdienen", sleep_title:"Dein Team schläft", sleep_sub:"Schlafende Buddies verdienen nichts",
+    left_lbl:"übrig", stock:"Vorrat {n} / {m} Videos", to_full:"noch {n} bis {h} Std", full:"Vorrat voll", wake_btn:"Video ansehen · +{h} Std wach",
+    wake_note:"{n} Videos = alle Buddies {h} Std wach (max. {h} Std auf Vorrat). Schlafende Buddies verdienen nichts und sammeln keine XP. Wach-Videos geben keine Diamanten.",
+    woke:"+{h} Std wach", xp_ready:"XP voll", xp_left:"⏳ {t}", skip_btn:"▶ {n} Video{s}", lv_btn:"⬆ 💎 {c}", filled:"XP voll – bereit zum Leveln",
+    skip_prog:"Video {a}/{b} gesehen", payout_lbl:"Auszahlung", pay_from:"ab {n} · {a}", round_hint:"Alle 4 Std wird dein Verdienst gutgeschrieben – nur für die Zeit, in der dein Team wach war.",
+    braked:"Verdienst-Grenze erreicht: Deine Buddies bringen gerade {n} 💎/Min statt $. Schau mehr Videos, dann gibt es wieder $.",
+    xp_title:"XP-Wartezeit pro Level", xp_none:"keine", xp_skip:"Sofort voll", xp_skip_v:"1 / 2 / 3 Videos (je nach Restzeit) · {n}× pro Tag",
+    coins:"Coins", coins_note:"10 % der Werbeeinnahmen jedes Videos – alle 4 Std in $ umgerechnet", xp_lbl:"XP", xp_need:"XP-Wartezeit",
     next_credit:"Nächste Gutschrift in", earned_round:"Verdient diese Runde", profit_day:"Profit pro Tag", collection:"Sammlung",
     eligible:"✓ Du nimmst an der Auszahlung teil", not_eligible:"ⓘ Sieh dir heute mindestens {n} Werbung an, sonst verfällt der Ertrag dieser Runde.",
     no_figs:"Noch keine Figuren", no_figs_txt:"Öffne dein kostenloses Start-Pack und hol dir deinen ersten Kumpel.", to_packs:"Zu den Packs",
     earn_btn:"Verdienst-Übersicht", earn_btn_sub:"Was jeder Buddy verdient – bis Stufe 500", earn_title:"Verdienst-Übersicht",
-    earn_sub:"Tagesverdienst jedes Buddys auf der gewählten Stufe. Jede Stufe bringt +5 %.", earn_level:"Stufe", earn_all96:"Alle 96 Buddies", earn_alljp:"Alle 4 Jackpots",
+    earn_sub:"Tagesverdienst jedes Buddys auf der gewählten Stufe (24 Std wach). Ab Stufe 300 steigt der Ertrag deutlich schneller.", earn_level:"Stufe", earn_all96:"Alle 96 Buddies", earn_alljp:"Alle 4 Jackpots",
     per_month:"/Monat", earn_yours:"Deine Buddies jetzt", owned_lv:"Lv {n}",
     mine:"Meine", jackpot:"Jackpot", per_day:"/Tag", jp_info:"4 Extra-Figuren – sie zählen nicht zur Sammlung und können in jedem Pack stecken.",
     packs_sub:"Jedes Pack enthält eine zufällige Figur. Doppelte Figur: 40 % der Diamanten zurück.", free:"GRATIS", open_free:"Gratis öffnen", open:"Öffnen",
@@ -323,7 +360,7 @@ const I18N = {
     paid_next:"Wird bei der nächsten Runde ausgezahlt", payout_from:"Auszahlung ab {n} – bis dahin wird angespart", auto_payout:"Automatisch auszahlen",
     deposit_only:"Einzahlung (nur für Diamanten)", next_round:"Nächste Runde in", credited_last:"Gutgeschrieben letzte Runde", paid_total:"Bisher ausgezahlt",
     how_get:"So bekommst du dein Geld", step1:"Öffne einmal <b>@CryptoBot</b> in Telegram und drücke Start.", step2:"Fertig. Ab {n} kommt die Auszahlung automatisch in {a} dorthin.",
-    wallet_note:"Alle 4 Stunden wird der Ertrag deiner Figuren gutgeschrieben. Voraussetzung: mindestens {n} Werbung in den letzten 24 Stunden.",
+    wallet_note:"Alle 4 Stunden wird der Ertrag deiner Buddies gutgeschrieben – für die Zeit, in der dein Team wach war.",
     payouts:"Auszahlungen", st_done:"Gesendet", st_pending:"In Bearbeitung", st_failed:"Fehlgeschlagen", leaderboard:"Rangliste",
     jp_title:"Jackpot-Figuren", jp_sub:"4 Extra-Figuren mit festem Tagesertrag. Sie können in jedem Bronze-, Silber- oder Gold-Pack stecken.", in_coll:"✓ In deiner Sammlung",
     coll_done:"🏆 Sammlung komplett", coll_done_txt:"Dein Bonus von {n} $ wurde gutgeschrieben.", coll_bonus:"Sammel-Bonus", coll_sub:"Sammle alle {t} Figuren – noch {r}.",
@@ -360,7 +397,6 @@ const CHARS = window.KUMPELS || [];
 const BY = Object.fromEntries(CHARS.map(c=>[c.id,c]));
 const MAX_LEVEL = 500, PERIOD = 4*3600, AD_COOLDOWN = 45, DUP_REFUND = 0.4, DAILY_D = 1, REF_D = 5, AD_D = 2, DIA_PER_USDT = 100;
 const EDITION_USD = {klassik:[0.001,0.002], frost:[0.004,0.008], lava:[0.015,0.03], gold:[0.06,0.12], kosmos:[0.3,0.5]};
-const COST_F = {klassik:1, frost:1.25, lava:1.5, gold:2, kosmos:2.5};
 const ED_COLOR = {klassik:"#94a3b8", frost:"#38bdf8", lava:"#f43f5e", gold:"#f59e0b", kosmos:"#a855f7"};
 const PACKS = {
   start: {price:0,   odds:{klassik:100}},
@@ -372,10 +408,12 @@ const JACKPOTS = [{char:"pablo_panda",usd:5,every:525000},{char:"kasimir_krake",
 const BONUS = 1000;
 const JP = Object.fromEntries(JACKPOTS.map(j=>[j.char,j]));
 const REGULAR = CHARS.filter(c=>!JP[c.id]).map(c=>c.id);
-const daily = (id,l)=>{ if(JP[id]) return Math.round(JP[id].usd*(1+0.05*(l-1))*1e6)/1e6; const [lo,hi]=EDITION_USD[BY[id].edition]; return Math.round((lo+(hi-lo)*((BY[id].no-1)%20)/19)*(1+0.05*(l-1))*1e6)/1e6; };
-const lvCost = (id,l)=> Math.ceil((2+0.15*l)*COST_F[BY[id].edition]);
+const mult = l=>{ const [ml,mm,mx] = (S&&S.econ&&S.econ.mult)||[300,10,259.5]; return l<=ml ? 1+(mm-1)*(l-1)/Math.max(1,ml-1) : mm+(mx-mm)*(l-ml)/Math.max(1,MAX_LEVEL-ml); };
+const base = id=>{ if(S&&S.econ&&S.econ.bases[id]!=null) return S.econ.bases[id]; if(JP[id]) return JP[id].usd/10; const [lo,hi]=EDITION_USD[BY[id].edition]; return (lo+(hi-lo)*((BY[id].no-1)%20)/19)/10; };
+const daily = (id,l)=> Math.round(base(id)*mult(l)*1e6)/1e6;
+const packOdds = k=> (S&&S.econ&&S.econ.packs[k]) || PACKS[k];
 const adReward = n=> AD_D;
-const APP_VERSION = "2026-11-07.6";
+const APP_VERSION = "2026-11-08.1";
 
 /* ================================================================ Verbindung */
 const tg = window.Telegram && window.Telegram.WebApp;
@@ -441,7 +479,8 @@ const $ = id=>document.getElementById(id);
 const now = ()=> Date.now()/1000 - offset;
 const fmt = n=> n>=1e9 ? (n/1e9).toLocaleString(LOC(),{maximumFractionDigits:2})+(LANG==="de"?" Mrd":"B") : n>=1e6 ? (n/1e6).toLocaleString(LOC(),{maximumFractionDigits:2})+(LANG==="de"?" Mio":"M") : Math.floor(n).toLocaleString(LOC());
 const usd = (n,d=2)=> n.toLocaleString(LOC(),{minimumFractionDigits:d,maximumFractionDigits:d});
-const money = n=> LANG==="de" ? usd(n, n<1 ? 4 : 2) + " $" : "$" + usd(n, n<1 ? 4 : 2);
+const dec = n=> n>=1 ? 2 : n>0 && n<0.0001 ? 6 : 4;
+const money = n=> LANG==="de" ? usd(n, dec(n)) + " $" : "$" + usd(n, dec(n));
 const pct = w=> String(w).replace(".", LANG==="de"?",":".") + " %";
 const hms = s=>{ s=Math.max(0,Math.floor(s)); return [Math.floor(s/3600),Math.floor(s%3600/60),s%60].map((x,i)=>i?String(x).padStart(2,"0"):x).join(":"); };
 const esc = s=>String(s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
@@ -460,47 +499,80 @@ async function act(action, body={}){
 }
 
 /* ================================================================ Ansichten */
+const awakeSecs = ()=> S.braked ? 0 : Math.max(0, Math.min(now(), S.awake_until) - S.server_time);
+const liveRound = ()=> S.round_points + totalDaily()/86400*awakeSecs();
+const hm = s=>{ s=Math.max(0,Math.floor(s)); return Math.floor(s/3600)+":"+String(Math.floor(s%3600/60)).padStart(2,"0"); };
+const ms = s=>{ s=Math.max(0,Math.ceil(s)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); };
+const fmtH = h=> String(h).replace(".", LANG==="de"?",":".");
 function roundCard(){
-  const live = S.round_points + totalDaily()/86400*Math.max(0, now()-S.server_time);
   return `<div class="round">
     <div class="lbl">${T("next_credit")}</div>
     <div class="big num" id="cd">${hms(S.round_end-now())}</div>
     <div class="row3">
-      <div><span class="lbl">${T("earned_round")}</span><b class="num" id="rp">${money(live)}</b></div>
+      <div><span class="lbl">${T("earned_round")}</span><b class="num" id="rp">${money(liveRound())}</b></div>
       <div><span class="lbl">${T("profit_day")}</span><b class="num">${money(totalDaily())}</b></div>
-      <div><span class="lbl">${T("collection")}</span><b class="num">${S.collected}/${S.collection_total}</b></div>
+      <div><span class="lbl">${T("payout_lbl")}</span><b class="num">${T("pay_from",{n:money(S.min_payout), a:S.payout_asset||"TRX"})}</b></div>
     </div>
-    ${S.eligible ? `<div class="hint ok">${T("eligible")}</div>` : `<div class="hint">${T("not_eligible",{n:S.min_ads_24h})}</div>`}
+    ${S.braked ? `<div class="hint">${T("braked",{n:fmtH(S.econ.brake_dia_per_min)})}</div>` : S.min_ads_24h && !S.eligible ? `<div class="hint">${T("not_eligible",{n:S.min_ads_24h})}</div>` : `<div class="hint">${T("round_hint")}</div>`}
   </div>`;
+}
+function wakeCard(){
+  const left = Math.max(0, S.awake_until - now()), per = S.wake_hours*3600, slots = Math.round(S.wake_max_hours/S.wake_hours);
+  const have = Math.min(slots, Math.ceil(left/per - 0.001)), awake = left>0, full = S.wake_max_hours*3600 - left < 60;
+  return `<div class="wake ${awake?"":"sleep"}" id="wakeCard"><div class="top"><div class="sun">${awake?"☀️":"😴"}</div>
+      <div class="tt"><b>${T(awake?"awake_title":"sleep_title")}</b><small>${T(awake?"awake_sub":"sleep_sub")}</small></div>
+      <div class="left"><b class="num" id="wakeLeft">${hm(left)}</b><small>${T("left_lbl")}</small></div></div>
+    <div class="segs">${Array.from({length:slots},(_,i)=>`<i class="${i<have?"on":""}"></i>`).join("")}</div>
+    <div class="row"><span>${T("stock",{n:have,m:slots})}</span><span>${full?T("full"):T("to_full",{n:slots-have,h:fmtH(S.wake_max_hours)})}</span></div>
+    <button class="btn wbtn adb" data-wake ${full?"disabled":""}>${T("wake_btn",{h:fmtH(S.wake_hours)})}</button>
+    <p>${T("wake_note",{n:slots,h:fmtH(S.wake_max_hours)})}</p></div>`;
+}
+function xpNow(k){ return Math.min(k.xp_need, k.xp + Math.max(0, Math.min(now(), S.awake_until) - S.server_time)); }
+function xpBlock(k){
+  if(k.level>=MAX_LEVEL) return `<div class="xpt ok">${T("max_level")}</div>`;
+  const x = xpNow(k), rest = k.xp_need - x, p = k.xp_need ? x/k.xp_need*100 : 100;
+  if(rest<=0) return `<div class="xpbar"><i style="width:100%"></i></div><div class="xpt ok">${T("xp_ready")}</div>
+    <button class="xbtn lvl" data-lvq="${k.id}" ${S.diamonds>=k.level_cost?"":"disabled"}>${T("lv_btn",{c:fmt(k.level_cost)})}</button>`;
+  const need = Math.max(k.skip_videos, (k.skip_ads||0)+1), todo = Math.max(1, need-(k.skip_ads||0));
+  return `<div class="xpbar"><i style="width:${p}%"></i></div><div class="xpt" data-xpid="${k.id}">${T("xp_left",{t:ms(rest)})}</div>
+    <button class="xbtn adb" data-skip="${k.id}" ${S.skips_today>=S.skips_max?"disabled":""}>${T("skip_btn",{n:todo,s:todo>1?"s":""})}</button>`;
+}
+function xpTable(){
+  const w = S.econ.xp_waits, b = S.econ.xp_band, rows = [];
+  const lab = i=> i===w.length-1 ? (LANG==="de"?"ab ":"from ")+i*b : (i*b||1)+"–"+(i+1)*b;
+  for(let i=0;i<w.length;i+=3){ const ix=[i,i+1,i+2].filter(j=>j<w.length);
+    rows.push(`<div class="kv"><span>${ix.map(lab).join(" · ")}</span><span>${ix.map(j=>w[j]?w[j]:"0").join(" · ")} Min</span></div>`); }
+  return `<div class="card xptab"><b style="font-size:14px">${T("xp_title")}</b>${rows.join("")}
+    <div class="kv"><span>${T("xp_skip")}</span><span>${T("xp_skip_v",{n:S.skips_max})}</span></div></div>`;
 }
 
 const VIEWS = {
   sammlung(){
     const own = owned();
-    if(!S.kumpels.length) return roundCard() + `<div class="card empty"><div style="font-size:44px">🎁</div><h2 style="margin:6px 0 0">${T("no_figs")}</h2>
+    if(!S.kumpels.length) return roundCard() + wakeCard() + `<div class="card empty"><div style="font-size:44px">🎁</div><h2 style="margin:6px 0 0">${T("no_figs")}</h2>
       <p>${T("no_figs_txt")}</p><button class="btn" data-go="packs">${T("to_packs")}</button></div>`;
     const jpOwned = JACKPOTS.filter(j=>own[j.char]).length;
     const list = filter==="meine" ? S.kumpels.slice().sort((a,b)=>b.daily-a.daily).map(k=>k.id)
                : filter==="jackpot" ? JACKPOTS.map(j=>j.char) : REGULAR;
     const card = id=>{
       const k = own[id], c = BY[id], jp = JP[id];
-      if(k) return `<button class="fig ${jp?"isjp":""}" data-open="${id}"><div class="art" style="${bg(id)}">${c.svg}<span class="lv">Lv ${k.level}</span><span class="dot" style="background:${jp?"#f2c94c":ED_COLOR[c.edition]}"></span></div>
-                     <div class="meta"><div class="nm">${NAME(id)}</div><div class="pr">+${money(k.daily)}${T("per_day")}</div></div></button>`;
+      if(k) return `<div class="fig ${jp?"isjp":""}" data-open="${id}"><div class="art" style="${bg(id)}">${c.svg}<span class="lv">Lv ${k.level}</span><span class="dot" style="background:${jp?"#f2c94c":ED_COLOR[c.edition]}"></span></div>
+                     <div class="meta"><div class="nm">${NAME(id)}</div><div class="pr">+${money(k.daily)}${T("per_day")}</div>${xpBlock(k)}</div></div>`;
       return `<div class="fig locked"><div class="art">${c.svg}</div><div class="meta"><div class="nm">${jp?T("jackpot"):"#"+c.no} ???</div><div class="pr" style="color:var(--faint)">${jp?money(jp.usd)+T("per_day"):EDN(c.edition)}</div></div></div>`;
     };
-    return roundCard() + bonusCard() + `<button class="earn-btn" data-earn><span class="ei">📊</span><span class="et"><b>${T("earn_btn")}</b><small>${T("earn_btn_sub")}</small></span><span class="ea">›</span></button>
+    return roundCard() + wakeCard() + bonusCard() + `<button class="earn-btn" data-earn><span class="ei">📊</span><span class="et"><b>${T("earn_btn")}</b><small>${T("earn_btn_sub")}</small></span><span class="ea">›</span></button>
       <div class="seg">
         <button data-f="meine" class="${filter==="meine"?"on":""}">${T("mine")}</button>
         <button data-f="alle" class="${filter==="alle"?"on":""}">${T("collection")} ${S.collected}/${S.collection_total}</button>
         <button data-f="jackpot" class="${filter==="jackpot"?"on":""}">${T("jackpot")} ${jpOwned}/4</button></div>
       ${filter==="jackpot"?`<p class="sub">${T("jp_info")}</p>`:""}
-      <div class="grid">${list.map(card).join("")}</div>`;
+      <div class="grid">${list.map(card).join("")}</div>${filter==="meine"?xpTable():""}`;
   },
   packs(){
     const keys = (S.starter_available?["start"]:[]).concat(["bronze","silber","gold"]);
     return `<h2>Packs</h2><p class="sub">${T("packs_sub")}</p>` +
       keys.map(k=>{
-        const P = PACKS[k], ok = k==="start" || S.diamonds>=P.price;
+        const P = packOdds(k), ok = k==="start" || S.diamonds>=P.price;
         return `<div class="card pack"><div class="box ${k}">${packBox(k)}</div><div class="info">
           <div class="t">${packName(k)}</div><div class="d">${T("d_"+k)}</div>
           <div class="odds">${Object.entries(P.odds).map(([e,w])=>`<i style="width:${w}%;background:${ED_COLOR[e]}"></i>`).join("")}</div>
@@ -574,7 +646,9 @@ const VIEWS = {
         <div class="kv"><span>${T("next_round")}</span><b class="num" id="cd2">${hms(S.round_end-now())}</b></div>
         <div class="kv"><span>${T("profit_day")}</span><b class="num">${money(totalDaily())}</b></div>
         <div class="kv"><span>${T("credited_last")}</span><b class="num">${lr&&lr.usdt?money(lr.usdt):"–"}</b></div>
-        <div class="kv"><span>${T("paid_total")}</span><b class="num">${money(S.usdt_paid)}</b></div></div>
+        <div class="kv"><span>${T("paid_total")}</span><b class="num">${money(S.usdt_paid)}</b></div>
+        <div class="kv"><span>${T("coins")}</span><b class="num">${S.coins.toLocaleString(LOC(),{maximumFractionDigits:2})} ≈ ${money(S.coins*S.econ.coin_usd)}</b></div>
+        <p style="color:var(--muted);font-size:11.5px;margin:6px 0 0">${T("coins_note")}</p></div>
       <div class="card"><b style="font-size:14px">${T("how_get")}</b>
         <ol class="steps"><li>${T("step1")}</li><li>${T("step2",{n:money(S.min_payout), a:S.payout_asset||"TRX"})}</li></ol>
         <p style="color:var(--muted);font-size:12px;margin:10px 0 0">${T("wallet_note",{n:S.min_ads_24h})}</p></div>
@@ -630,9 +704,7 @@ let openId = null;
 function openDetail(id){
   openId = id;
   const k = owned()[id], c = BY[id]; if(!k) return;
-  const max = k.level>=MAX_LEVEL;
-  let c10=0,l=k.level,n=0; while(n<10 && l<MAX_LEVEL){ c10+=lvCost(id,l); l++; n++; }
-  let cm=0; l=k.level; n=0; while(l<MAX_LEVEL && cm+lvCost(id,l)<=S.diamonds){ cm+=lvCost(id,l); l++; n++; }
+  const max = k.level>=MAX_LEVEL, ready = !max && xpNow(k) >= k.xp_need;
   $("sheet").innerHTML = `<div class="grab"></div><button class="x" data-close aria-label="${T("close")}">✕</button>
     <div class="detail-art" style="${bg(id)}">${c.svg}</div>
     <div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:21px;font-weight:800;letter-spacing:-.3px">${NAME(id)}</div>
@@ -643,10 +715,12 @@ function openDetail(id){
         <div class="bar" style="margin:8px 0 0;height:5px"><i style="width:${k.level/MAX_LEVEL*100}%;background:var(--accent)"></i></div></div>
       <div class="stat"><span>${T("profit_day")}</span><b class="num">${money(k.daily)}</b>${max?"":`<div style="font-size:12px;color:var(--green);font-weight:600;margin-top:2px">${T("next_level",{n:money(k.next_daily-k.daily)})}</div>`}</div>
     </div>
-    ${max ? `<button class="btn" disabled>${T("max_level")}</button>` : `<div class="btn-row">
-      <button class="btn" data-lv="1" ${S.diamonds>=k.level_cost?"":"disabled"}>+1<small>💎 ${k.level_cost}</small></button>
-      <button class="btn" data-lv="10" ${S.diamonds>=c10?"":"disabled"}>+10<small>💎 ${fmt(c10)}</small></button>
-      <button class="btn ghost" data-lv="500" ${n?"":"disabled"}>Max${n?` +${n}`:""}<small>💎 ${fmt(cm)}</small></button></div>`}
+    ${max ? `<button class="btn" disabled>${T("max_level")}</button>` : `
+      <div class="stat" style="margin:0 0 10px"><span>${T("xp_lbl")} · ${T("xp_need")} ${Math.round(k.xp_need/60)} Min</span>${xpBlock(k).replace(/xbtn[^"]*"/g,'xbtn" style="display:none"')}</div>
+      <div class="btn-row" style="grid-template-columns:1fr 1fr">
+      <button class="btn" data-lv="1" ${ready && S.diamonds>=k.level_cost?"":"disabled"}>+1<small>💎 ${fmt(k.level_cost)}</small></button>
+      ${ready ? `<button class="btn ghost" data-lv="500" ${S.diamonds>=k.level_cost?"":"disabled"}>Max<small>${T("xp_ready")}</small></button>`
+              : `<button class="btn ghost adb" data-skip="${id}" ${S.skips_today>=S.skips_max?"disabled":""}>${T("skip_btn",{n:Math.max(1,k.skip_videos-(k.skip_ads||0)),s:k.skip_videos-(k.skip_ads||0)>1?"s":""})}<small>+${S.skip_diamonds} 💎</small></button>`}</div>`}
     <p style="text-align:center;color:var(--muted);font-size:12.5px;margin:12px 0 0">${T("you_have")} 💎 ${fmt(S.diamonds)}</p>`;
   $("sheet").classList.add("on"); $("scrim").classList.add("on");
 }
@@ -733,12 +807,22 @@ function tick(){
   const left = hms(S.round_end-now());
   if($("cd")) $("cd").textContent = left;
   if($("cd2")) $("cd2").textContent = left;
-  if($("rp")) $("rp").textContent = money(S.round_points + totalDaily()/86400*Math.max(0, now()-S.server_time));
+  if($("rp")) $("rp").textContent = money(liveRound());
+  if($("wakeLeft")){ const l = S.awake_until-now(); $("wakeLeft").textContent = hm(l); if(l<=0 && !$("wakeCard").classList.contains("sleep")) render(); }
+  let reready = false;
+  document.querySelectorAll("[data-xpid]").forEach(el=>{ const k = S.kumpels.find(x=>x.id===el.dataset.xpid); if(!k) return;
+    const rest = k.xp_need - xpNow(k); if(rest<=0) reready = true; else el.textContent = T("xp_left",{t:ms(rest)}); });
+  if(reready) render();
   document.querySelectorAll("[data-end]").forEach(el=>{ const sec=+el.dataset.end-now(); if(sec<=0){ el.textContent=T("ended"); return; }
     const d=Math.floor(sec/86400), h=Math.floor(sec%86400/3600), m=Math.floor(sec%3600/60);
     el.textContent = T("ends_in",{t: d?`${d} ${T("d_short")} ${h} ${T("h_short")}`: h?`${h} ${T("h_short")} ${m} ${T("m_short")}`:`${m} ${T("m_short")}`}); });
   const b = $("adBtn");
   if(b){ const w = S.next_ad_at-now(); if(w>0){ b.disabled=true; b.innerHTML=`<span class="num">${Math.ceil(w)} s</span>`; } else if(b.disabled){ b.disabled=false; b.textContent=T("watch"); } }
+  const cw = S.next_ad_at-now();
+  document.querySelectorAll(".adb").forEach(x=>{
+    if(cw>0){ if(!x.dataset.orig){ x.dataset.orig = x.innerHTML; x.dataset.wasOff = x.disabled ? "1" : ""; } x.disabled = true; x.innerHTML = `⏳ <span class="num">${Math.ceil(cw)} s</span>`; }
+    else if(x.dataset.orig){ x.innerHTML = x.dataset.orig; x.disabled = !!x.dataset.wasOff; delete x.dataset.orig; }
+  });
 }
 
 /* ================================================================ Sprache wechseln */
@@ -762,6 +846,10 @@ document.addEventListener("click", async e=>{
   if("close" in d) return closeSheet();
   if("closerv" in d){ $("reveal").classList.remove("on"); maybeInterstitial(); return; }
   if(d.lv){ const r = await act("levelup",{char:openId, steps:+d.lv}); if(r) toast(T("lv_toast",{n:r.levels, s:r.levels>1?(LANG==="de"?"n":"s"):"", c:fmt(r.spent)})); return; }
+  if(d.lvq){ const r = await act("levelup",{char:d.lvq, steps:1}); if(r) toast(T("lv_toast",{n:r.levels, s:"", c:fmt(r.spent)})); return; }
+  if("wake" in d){ el.disabled=true; if(await showRewardedAd()){ const r = await act("ad",{purpose:"wake"}); if(r) toast("☀️ "+T("woke",{h:fmtH(S.wake_hours)})); } else render(); return; }
+  if(d.skip){ el.disabled=true; if(await showRewardedAd()){ const r = await act("ad",{purpose:"skip", char:d.skip});
+      if(r){ const k = S.kumpels.find(x=>x.id===d.skip); toast((r.filled ? T("filled") : T("skip_prog",{a:k?k.skip_ads:1, b:k?k.skip_videos:2})) + (r.diamonds?` · +${r.diamonds} 💎`:"")); } } else render(); return; }
   if("ad" in d){ el.disabled=true; if(await showRewardedAd()){ const r = await act("ad"); if(r) toast(`+${r.diamonds} 💎`); } else render(); return; }
   if("daily" in d){ const r = await act("daily"); if(r) toast(T("daily_toast",{n:r.diamonds})); return; }
   if("share" in d){
