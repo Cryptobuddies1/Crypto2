@@ -172,13 +172,15 @@ def init_db() -> None:
                           ("dia_frac", "REAL NOT NULL DEFAULT 0"), ("skips_day", "TEXT"),
                           ("skips_today", "INTEGER NOT NULL DEFAULT 0"), ("pass_until", "REAL NOT NULL DEFAULT 0"),
                           ("boost", "INTEGER NOT NULL DEFAULT 0"), ("welcome_used", "INTEGER NOT NULL DEFAULT 0"),
-                          ("wbonus_state", "TEXT"), ("wbonus_locked", "REAL NOT NULL DEFAULT 0")]:
+                          ("wbonus_state", "TEXT"), ("wbonus_locked", "REAL NOT NULL DEFAULT 0"), ("gift_state", "TEXT")]:
             if col not in cols:   # Spalten für ältere Datenbanken nachrüsten
                 con.execute(f"ALTER TABLE users ADD COLUMN {col} {decl}")
         if "wbonus_state" not in cols:   # Willkommensbonus nur für neue Spieler: bestehende bekommen kein Popup
             con.execute("UPDATE users SET wbonus_state='legacy'")
         if "awake_until" not in cols:   # Umstellung aufs Wach-System: alle starten wach
             con.execute("UPDATE users SET awake_until=?, last_settle=?", (game.now() + game.CFG["start_awake_hours"] * 3600, game.now()))
+        if "purpose" not in [r[1] for r in con.execute("PRAGMA table_info(ad_views)")]:
+            con.execute("ALTER TABLE ad_views ADD COLUMN purpose TEXT")
         kcols = [r[1] for r in con.execute("PRAGMA table_info(kumpels)")]
         for col, decl in [("xp", "REAL NOT NULL DEFAULT 0"), ("skip_ads", "INTEGER NOT NULL DEFAULT 0")]:
             if col not in kcols:
@@ -233,6 +235,16 @@ def jackpot_check(con) -> str | None:
     return best["char_id"]
 
 
+def gift_view(u) -> dict | None:
+    st = u["gift_state"] or ""
+    if not st.startswith("pending:"):
+        return None
+    char = st.split(":", 1)[1]
+    if char not in game.BY_ID:
+        return None
+    return {"char": char, "earn": [[lv, game.daily_profit(char, lv)] for lv in (1, 100, 250, 500)]}
+
+
 def wbonus_view(u) -> dict:
     c = game.CFG
     return {"state": u["wbonus_state"], "show_popup": u["wbonus_state"] is None and c["welcome_bonus_usd"] > 0,
@@ -272,6 +284,11 @@ def ensure_user(con, user_id: int, name: str, ref_by: int | None = None, usernam
     con.execute("INSERT INTO users (id, name, created, ref_by, awake_until, last_settle) VALUES (?,?,?,?,?,?)",
                 (user_id, name, game.now(), ref_by if valid_ref else None,
                  game.now() + game.CFG["start_awake_hours"] * 3600, game.now()))
+    gift = game.CFG.get("start_gift")
+    if gift in game.BY_ID:   # Geschenk-Buddy für neue Spieler
+        con.execute("INSERT OR IGNORE INTO kumpels (user_id, char_id, last_collect) VALUES (?,?,?)", (user_id, gift, game.now()))
+        con.execute("INSERT INTO pulls (user_id, pack, char_id, duplicate, ts) VALUES (?,?,?,?,?)", (user_id, "gift", gift, 0, game.now()))
+        con.execute("UPDATE users SET gift_state=? WHERE id=?", ("pending:" + gift, user_id))
     if valid_ref:
         con.execute("UPDATE users SET diamonds=diamonds+? WHERE id IN (?,?)", (game.REFERRAL_DIAMONDS, user_id, ref_by))
         events.add(con, ref_by, "invites", 1)
@@ -446,7 +463,7 @@ def state(con, user_id: int) -> dict:
         "jackpots": [{"char": j["char"], "usd": j["usd"]} for j in game.JACKPOTS],   # ohne Chancen
         "collected": collected(con, user_id), "collection_total": len(game.REGULAR_IDS),
         "collection_bonus": game.CFG["collection_bonus_usd"], "collection_bonus_paid": bool(u["collection_bonus"]),
-        "boost": bool(u["boost"]), "shop": shop_view(con, u, t), "wbonus": wbonus_view(u),
+        "boost": bool(u["boost"]), "shop": shop_view(con, u, t), "wbonus": wbonus_view(u), "gift": gift_view(u),
         "dup_refund": {k: game.refund(k) for k in game.PACKS},
         "shop_enabled": SHOP_ENABLED, "deposit": round(u["deposit"], 6), "autopayout": bool(u["autopayout"]),
         "diamonds_per_usdt": game.DIAMONDS_PER_USDT, "topup_amounts": game.TOPUP_AMOUNTS,
@@ -582,10 +599,10 @@ def act_ad(con, user_id, u, purpose="diamonds", char=None):
                           (user_id, t - 120)).fetchone()
         if not row:
             raise E(400, "ad_unconfirmed")
-        con.execute("UPDATE ad_views SET used=1 WHERE id=?", (row["id"],))
+        con.execute("UPDATE ad_views SET used=1, purpose=? WHERE id=?", (purpose, row["id"]))
     else:
-        con.execute("INSERT INTO ad_views (user_id, ts, period, source, used) VALUES (?,?,?,?,1)",
-                    (user_id, t, game.period_of(t), "client"))
+        con.execute("INSERT INTO ad_views (user_id, ts, period, source, used, purpose) VALUES (?,?,?,?,1,?)",
+                    (user_id, t, game.period_of(t), "client", purpose))
     ads_today = u["ads_today"] if u["ads_day"] == today else 0
     rev = game.ad_revenue()
     con.execute("UPDATE users SET last_ad=?, ads_day=?, ads_today=?, ad_rev=ad_rev+? WHERE id=?",
@@ -966,7 +983,7 @@ async def characters_js():
     return FileResponse(BASE / "webapp" / "characters.js", media_type="application/javascript")
 
 
-APP_VERSION = "2026-11-08.8"
+APP_VERSION = "2026-11-08.9"
 
 
 @app.get("/version")
@@ -1116,6 +1133,8 @@ async def handle(action, user_id, tg_user, start_param, body):
             result = act_daily(con, user_id, u)
         elif action == "buy_diamonds":
             result = act_buy_diamonds(con, user_id, u, body.get("diamonds"))
+        elif action == "gift_seen":
+            con.execute("UPDATE users SET gift_state='seen' WHERE id=?", (user_id,))
         elif action == "wbonus":   # Popup: annehmen oder ablehnen (nur einmal)
             if u["wbonus_state"] is not None:
                 raise E(400, "wbonus_done")
@@ -1310,7 +1329,7 @@ async def admin_api(action: str, request: Request, x_init_data: str | None = Hea
                       for k in con.execute("SELECT * FROM kumpels WHERE user_id=? ORDER BY level DESC", (uid,))]
                 prof = {k: u[k] for k in ("id", "name", "username", "diamonds", "usdt", "deposit", "usdt_paid", "points_total",
                                           "created", "last_seen", "lang", "blocked", "collection_bonus", "pass_until", "boost", "welcome_used",
-                                          "wbonus_state", "wbonus_locked")}
+                                          "wbonus_state", "wbonus_locked", "gift_state")}
                 prof["friends"] = con.execute("SELECT COUNT(*) FROM users WHERE ref_by=?", (uid,)).fetchone()[0]
                 prof["is_admin"] = is_admin(uid, con)
                 prof["log"] = [dict(r) for r in con.execute(
@@ -1475,6 +1494,50 @@ async def finish_tournaments():
                 await bot.send_message(ADMIN_ID, f"🏁 Turnier #{t['id']} beendet, {len(t['winners'])} Gewinner ausgezeichnet.")
             except Exception:
                 pass
+
+
+def ad_report_text(minutes: int, t: float | None = None) -> str:
+    """Werbe-Bericht: Videos der letzten `minutes` Minuten und von heute."""
+    t = t or game.now()
+    since = t - minutes * 60
+    day0 = datetime.fromtimestamp(t).replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+    cond = "(used=1 OR source='s2s')"
+    with db() as con:
+        q = lambda a: con.execute(f"SELECT COUNT(*), COUNT(DISTINCT user_id) FROM ad_views WHERE ts>? AND {cond}", (a,)).fetchone()
+        n, users = q(since)
+        n_day, users_day = q(day0)
+        by = {r[0] or "diamonds": r[1] for r in con.execute(
+            f"SELECT purpose, COUNT(*) FROM ad_views WHERE ts>? AND {cond} GROUP BY purpose", (since,))}
+        top = con.execute(f"""SELECT a.user_id, COUNT(*) c, u.name, u.username FROM ad_views a LEFT JOIN users u ON u.id=a.user_id
+                              WHERE a.ts>? AND {cond} GROUP BY a.user_id ORDER BY c DESC LIMIT 5""", (since,)).fetchall()
+    rev = game.ad_revenue()
+    lines = [f"📺 <b>Werbe-Bericht · letzte {minutes} Min</b>",
+             f"Videos: <b>{n}</b> von {users} Spielern · ≈ {n * rev:.3f} $",
+             f"💎 Diamanten {by.get('diamonds', 0)} · ☀️ Wach {by.get('wake', 0)} · ⚡ Skip {by.get('skip', 0)}"]
+    if top:
+        lines.append("Top: " + ", ".join(f"{html.escape(r['name'] or str(r['user_id']))}{' @' + html.escape(r['username']) if r['username'] else ''} ({r['c']})" for r in top))
+    lines.append(f"\n📅 Heute: <b>{n_day}</b> Videos · {users_day} Spieler · ≈ {n_day * rev:.2f} $")
+    return "\n".join(lines)
+
+
+async def ad_report_loop():
+    """Schickt dem Besitzer regelmäßig, wie viel Werbung geschaut wurde."""
+    while True:
+        minutes = int(game.CFG.get("ad_report_min") or 0)
+        if minutes <= 0:
+            await asyncio.sleep(60)
+            continue
+        now_ = game.now()
+        await asyncio.sleep(minutes * 60 - now_ % (minutes * 60) + 2)   # immer zur vollen halben Stunde
+        try:
+            text = ad_report_text(minutes)
+            for owner in sorted(ADMIN_IDS):
+                try:
+                    await bot.send_message(owner, text, parse_mode="HTML")
+                except Exception as e:
+                    log.warning("Werbe-Bericht an %s fehlgeschlagen: %s", owner, e)
+        except Exception:
+            log.exception("Fehler beim Werbe-Bericht")
 
 
 async def events_loop():
@@ -1704,6 +1767,14 @@ async def admin_cmd(message: Message):
     await message.answer("Admin-Panel", reply_markup=kb)
 
 
+@dp.message(Command("werbung", "ads"))
+async def ads_cmd(message: Message):
+    """Werbe-Bericht sofort abrufen (nur Admins)."""
+    if not is_admin(message.from_user.id):
+        return
+    await message.answer(ad_report_text(int(game.CFG.get("ad_report_min") or 30)), parse_mode="HTML")
+
+
 @dp.message(Command("status"))
 async def status(message: Message):
     if not is_admin(message.from_user.id):
@@ -1799,7 +1870,7 @@ def check_config() -> None:
 async def main():
     check_config()
     server = uvicorn.Server(uvicorn.Config(app, host="0.0.0.0", port=PORT, log_level="info"))
-    await asyncio.gather(server.serve(), run_bot(), payout_loop(), events_loop())
+    await asyncio.gather(server.serve(), run_bot(), payout_loop(), events_loop(), ad_report_loop())
 
 
 if __name__ == "__main__":

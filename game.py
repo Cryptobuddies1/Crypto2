@@ -57,7 +57,9 @@ DEFAULTS = {
     # Sammel-Bonus: einmalig für alle normalen Buddies, ohne Zeitlimit
     "collection_bonus_usd": 300.0,
     # Sonstiges
-    "notify_new_users": 1,        # 1 = Besitzer (ADMIN_ID) bekommt bei jedem neuen Spieler eine Nachricht, 0 = aus
+    "notify_new_users": 1,
+    "ad_report_min": 30,          # alle X Minuten Werbe-Bericht an den Besitzer (0 = aus)
+    "start_gift": "pepe_pinguin", # Geschenk-Buddy für jeden neuen Spieler (leer = aus)        # 1 = Besitzer (ADMIN_ID) bekommt bei jedem neuen Spieler eine Nachricht, 0 = aus
     "min_ads_24h": 0,             # alte Regel: Videos in 24 h für die Rundenauszahlung (0 = aus, das Wach-System ersetzt sie)
     "max_payout_per_round": 0.0,  # Notbremse in $ pro Runde (0 = keine)
 }
@@ -77,6 +79,11 @@ def _same_type(default, value):
         v = float(value)
         if v < 0 or v != v:
             raise ValueError("negativ")
+        return v
+    if isinstance(default, str):
+        v = str(value).strip()
+        if v and v not in BY_ID:
+            raise ValueError("unbekannter Buddy")
         return v
     if isinstance(default, list):
         if isinstance(value, str):
