@@ -51,6 +51,9 @@ DEFAULTS = {
     "max_level_usd": {"klassik": 7.99, "frost": 19.99, "lava": 119.99, "gold": 599.99, "kosmos": 1999.99},
     # Willkommens-Angebot: neue Spieler bekommen in den ersten welcome_days Tagen einmalig Rabatt (nicht auf Boost/Pass)
     "welcome_discount": 0.75, "welcome_days": 7,
+    # Gebundener Willkommensbonus: neue Spieler können ihn einmal annehmen; frei (auf die Balance), sobald
+    # Bonus + verdientes Guthaben welcome_bonus_target erreichen – bis dahin keine Auszahlung
+    "welcome_bonus_usd": 15.0, "welcome_bonus_target": 25.0,
     # Sammel-Bonus: einmalig für alle normalen Buddies, ohne Zeitlimit
     "collection_bonus_usd": 300.0,
     # Sonstiges

@@ -242,6 +242,7 @@ async function openUser(id){
       <div class="kv"><span>Guthaben (auszahlbar)</span><b>${usd(u.usdt)}</b></div>
       <div class="kv"><span>Einzahlung (nur Diamanten)</span><b>${usd(u.deposit)}</b></div>
       <div class="kv"><span>Ausgezahlt</span><b>${usd(u.usdt_paid)}</b></div>
+      <div class="kv"><span>Willkommensbonus</span><b>${({accepted:"🔒 gebunden "+usd(u.wbonus_locked),released:"✓ freigegeben",declined:"abgelehnt",legacy:"– (Altspieler)"})[u.wbonus_state]||"noch nicht entschieden"}</b></div>
       <div class="kv"><span>Level-Boost · Willkommens-Rabatt</span><b>${u.boost?"⚡ aktiv":"–"} · ${u.welcome_used?"eingelöst":"offen"}</b></div>
       <div class="kv"><span>Komfort-Pass</span><b>${u.pass_until*1000>Date.now()?"♾️ bis "+dt(u.pass_until):"–"}</b></div>
       <div class="kv"><span>Kumpels · Freunde</span><b>${kumpels.length} · ${u.friends}</b></div>
@@ -321,6 +322,7 @@ const ECON_GROUPS = [
   ["Premium-Shop ($)", [["shop_gold_pack_usd","Goldenes Pack (Normalpreis)"],["shop_epic_pack_usd","Epic-Pack (Normalpreis)"],["shop_boost_usd","Level-Boost lebenslang (ohne Rabatt)"],
      ["boost_divisor","Level-Boost: Kosten ÷"],["max_level_usd","Stufe 500 kaufen – Normalpreis je Edition (JSON)"],
      ["welcome_discount","Willkommens-Rabatt (0.75 = −75 %, 0 = aus)"],["welcome_days","Willkommens-Angebot gilt Tage ab Einstieg"]]],
+  ["Willkommensbonus ($)", [["welcome_bonus_usd","Gebundener Bonus in $ (0 = aus)"],["welcome_bonus_target","Frei ab (Bonus + Verdienst) in $"]]],
   ["Sammel-Bonus", [["collection_bonus_usd","Bonus in $ für alle 96 Buddies (ohne Zeitlimit)"]]],
   ["Wach-System", [["wake_hours","Std wach pro Wach-Video"],["wake_max_hours","Max. Std auf Vorrat"],["start_awake_hours","Neue Spieler starten wach (Std)"]]],
   ["XP-Wartezeit", [["xp_band","Stufen pro Block"],["xp_waits","Minuten je Block (Komma-Liste)"],["skip_limits","Sofort-Füllen: Restzeit bis … Min → 1/2/3 Videos"],["skip_max_day","Sofort-Füllen pro Tag"],["skip_diamonds","💎 pro Skip-Video"]]],

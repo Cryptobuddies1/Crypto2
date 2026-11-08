@@ -171,9 +171,12 @@ def init_db() -> None:
                           ("coins", "REAL NOT NULL DEFAULT 0"), ("ad_rev", "REAL NOT NULL DEFAULT 0"),
                           ("dia_frac", "REAL NOT NULL DEFAULT 0"), ("skips_day", "TEXT"),
                           ("skips_today", "INTEGER NOT NULL DEFAULT 0"), ("pass_until", "REAL NOT NULL DEFAULT 0"),
-                          ("boost", "INTEGER NOT NULL DEFAULT 0"), ("welcome_used", "INTEGER NOT NULL DEFAULT 0")]:
+                          ("boost", "INTEGER NOT NULL DEFAULT 0"), ("welcome_used", "INTEGER NOT NULL DEFAULT 0"),
+                          ("wbonus_state", "TEXT"), ("wbonus_locked", "REAL NOT NULL DEFAULT 0")]:
             if col not in cols:   # Spalten für ältere Datenbanken nachrüsten
                 con.execute(f"ALTER TABLE users ADD COLUMN {col} {decl}")
+        if "wbonus_state" not in cols:   # Willkommensbonus nur für neue Spieler: bestehende bekommen kein Popup
+            con.execute("UPDATE users SET wbonus_state='legacy'")
         if "awake_until" not in cols:   # Umstellung aufs Wach-System: alle starten wach
             con.execute("UPDATE users SET awake_until=?, last_settle=?", (game.now() + game.CFG["start_awake_hours"] * 3600, game.now()))
         kcols = [r[1] for r in con.execute("PRAGMA table_info(kumpels)")]
@@ -228,6 +231,35 @@ def jackpot_check(con) -> str | None:
         else:   # zwei Treffer gleichzeitig: der kleinere rutscht ins nächste Pack
             con.execute("UPDATE jackpots SET next_pos=? WHERE char_id=?", (n + 1, h["char_id"]))
     return best["char_id"]
+
+
+def wbonus_view(u) -> dict:
+    c = game.CFG
+    return {"state": u["wbonus_state"], "show_popup": u["wbonus_state"] is None and c["welcome_bonus_usd"] > 0,
+            "amount": c["welcome_bonus_usd"], "target": c["welcome_bonus_target"], "locked": round(u["wbonus_locked"], 6),
+            "active": u["wbonus_state"] == "accepted"}
+
+
+def release_wbonus(con, user_id: int) -> float:
+    """Gibt den gebundenen Bonus frei, sobald Bonus + Guthaben das Ziel erreichen. Gibt den Betrag zurück (0 = noch nicht)."""
+    u = con.execute("SELECT usdt, wbonus_state, wbonus_locked FROM users WHERE id=?", (user_id,)).fetchone()
+    if not u or u["wbonus_state"] != "accepted" or u["usdt"] + u["wbonus_locked"] < game.CFG["welcome_bonus_target"] - 1e-9:
+        return 0.0
+    amt = u["wbonus_locked"]
+    con.execute("UPDATE users SET usdt=usdt+?, wbonus_locked=0, wbonus_state='released' WHERE id=?", (amt, user_id))
+    log.info("WILLKOMMENSBONUS frei: %s $ an Spieler %s", amt, user_id)
+    try:
+        asyncio.get_running_loop().create_task(notify_wbonus(user_id, amt))
+    except RuntimeError:
+        pass
+    return amt
+
+
+async def notify_wbonus(user_id: int, amt: float):
+    try:
+        await bot.send_message(user_id, tr(user_lang(user_id), "wbonus_ok", n=f"{amt:.2f}"))
+    except Exception:
+        pass
 
 
 def ensure_user(con, user_id: int, name: str, ref_by: int | None = None, username: str | None = None,
@@ -414,7 +446,7 @@ def state(con, user_id: int) -> dict:
         "jackpots": [{"char": j["char"], "usd": j["usd"]} for j in game.JACKPOTS],   # ohne Chancen
         "collected": collected(con, user_id), "collection_total": len(game.REGULAR_IDS),
         "collection_bonus": game.CFG["collection_bonus_usd"], "collection_bonus_paid": bool(u["collection_bonus"]),
-        "boost": bool(u["boost"]), "shop": shop_view(con, u, t),
+        "boost": bool(u["boost"]), "shop": shop_view(con, u, t), "wbonus": wbonus_view(u),
         "dup_refund": {k: game.refund(k) for k in game.PACKS},
         "shop_enabled": SHOP_ENABLED, "deposit": round(u["deposit"], 6), "autopayout": bool(u["autopayout"]),
         "diamonds_per_usdt": game.DIAMONDS_PER_USDT, "topup_amounts": game.TOPUP_AMOUNTS,
@@ -934,7 +966,7 @@ async def characters_js():
     return FileResponse(BASE / "webapp" / "characters.js", media_type="application/javascript")
 
 
-APP_VERSION = "2026-11-08.7"
+APP_VERSION = "2026-11-08.8"
 
 
 @app.get("/version")
@@ -1058,6 +1090,7 @@ async def handle(action, user_id, tg_user, start_param, body):
         settle(con, user_id)
         con.execute("UPDATE users SET last_seen=?, blocked=0, username=? WHERE id=?",
                     (game.now(), (tg_user.get("username") or "").lower() or None, user_id))
+        release_wbonus(con, user_id)
         u = con.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
         result = None
         if action == "state":
@@ -1083,6 +1116,15 @@ async def handle(action, user_id, tg_user, start_param, body):
             result = act_daily(con, user_id, u)
         elif action == "buy_diamonds":
             result = act_buy_diamonds(con, user_id, u, body.get("diamonds"))
+        elif action == "wbonus":   # Popup: annehmen oder ablehnen (nur einmal)
+            if u["wbonus_state"] is not None:
+                raise E(400, "wbonus_done")
+            if body.get("accept"):
+                con.execute("UPDATE users SET wbonus_state='accepted', wbonus_locked=? WHERE id=?", (game.CFG["welcome_bonus_usd"], user_id))
+                release_wbonus(con, user_id)
+            else:
+                con.execute("UPDATE users SET wbonus_state='declined' WHERE id=?", (user_id,))
+            result = {"accepted": bool(body.get("accept"))}
         elif action == "autopayout":
             con.execute("UPDATE users SET autopayout=? WHERE id=?", (int(bool(body.get("on"))), user_id))
         else:
@@ -1267,7 +1309,8 @@ async def admin_api(action: str, request: Request, x_init_data: str | None = Hea
                 ks = [dict(id=k["char_id"], level=k["level"], copies=k["copies"], daily=game.daily_profit(k["char_id"], k["level"]))
                       for k in con.execute("SELECT * FROM kumpels WHERE user_id=? ORDER BY level DESC", (uid,))]
                 prof = {k: u[k] for k in ("id", "name", "username", "diamonds", "usdt", "deposit", "usdt_paid", "points_total",
-                                          "created", "last_seen", "lang", "blocked", "collection_bonus", "pass_until", "boost", "welcome_used")}
+                                          "created", "last_seen", "lang", "blocked", "collection_bonus", "pass_until", "boost", "welcome_used",
+                                          "wbonus_state", "wbonus_locked")}
                 prof["friends"] = con.execute("SELECT COUNT(*) FROM users WHERE ref_by=?", (uid,)).fetchone()[0]
                 prof["is_admin"] = is_admin(uid, con)
                 prof["log"] = [dict(r) for r in con.execute(
@@ -1491,7 +1534,10 @@ def queue_payouts() -> None:
         return
     t = game.now()
     with db() as con:
-        for u in con.execute("SELECT id, usdt FROM users WHERE usdt>=? AND autopayout=1", (MIN_PAYOUT,)).fetchall():
+        for (uid,) in con.execute("SELECT id FROM users WHERE wbonus_state='accepted'").fetchall():
+            release_wbonus(con, uid)
+        for u in con.execute("SELECT id, usdt FROM users WHERE usdt>=? AND autopayout=1 AND COALESCE(wbonus_state,'')!='accepted'",
+                             (MIN_PAYOUT,)).fetchall():
             amount = int(u["usdt"] * 100) / 100          # auf Cent abrunden
             con.execute("UPDATE users SET usdt=usdt-? WHERE id=?", (amount, u["id"]))
             con.execute("INSERT INTO payouts (user_id, amount, spend_id, status, created) VALUES (?,?,?,?,?)",

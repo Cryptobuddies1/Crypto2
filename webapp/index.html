@@ -135,6 +135,18 @@ h2{font-size:18px;font-weight:800;letter-spacing:-.2px;margin:22px 0 4px}
 .wake .row{display:flex;justify-content:space-between;font-size:12px;color:#d7dbe4}
 .wake .wbtn{margin-top:12px;background:linear-gradient(90deg,#fbbf24,#f97316);color:#1e1b4b;font-size:15px}
 .wake p{font-size:11.5px;color:#c7cbe0;margin:10px 0 0;line-height:1.45}
+.wb-dim{position:fixed;inset:0;z-index:60;background:rgba(15,23,42,.62);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:22px}
+.wb-pop{background:#fff;color:var(--ink);border-radius:26px;padding:24px 20px 16px;text-align:center;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.4);margin-top:40px}
+.wb-gift{width:92px;height:92px;margin:-68px auto 6px;border-radius:28px;background:linear-gradient(160deg,#fde68a,#f59e0b);display:grid;place-items:center;font-size:50px;box-shadow:0 10px 30px rgba(245,158,11,.5)}
+.wb-pop h3{margin:6px 0 0;font-size:21px}.wb-amt{font-size:46px;font-weight:900;background:linear-gradient(90deg,#f59e0b,#ea580c);-webkit-background-clip:text;background-clip:text;color:transparent;margin:0}
+.wb-pop p{color:#475569;font-size:13.5px;line-height:1.45;margin:4px 0 12px}
+.wb-steps{text-align:left;background:#f8fafc;border-radius:14px;padding:10px 12px;margin:0 0 14px;font-size:12.5px;color:#334155;line-height:1.7}
+.wb-pop .btn{margin-bottom:8px}.wb-pop .btn.acc{background:linear-gradient(90deg,#fbbf24,#f97316);color:#1e1b4b}.wb-pop .btn.no{background:var(--soft);color:var(--muted);font-size:13.5px}
+.wb-fine{font-size:10.5px;color:#94a3b8}
+.lockc{background:linear-gradient(140deg,#78350f,#b45309 55%,#f59e0b);color:#fff;border-radius:20px;padding:16px;margin-bottom:12px;position:relative;overflow:hidden}
+.lockc .bigi{position:absolute;right:12px;top:6px;font-size:48px;opacity:.2}.lockc .t{font-size:11px;font-weight:800;letter-spacing:.6px;color:#fde68a}
+.lockc h3{margin:2px 0 4px;font-size:26px}.lockc p{margin:0 0 10px;font-size:12.5px;color:#fef3c7;line-height:1.4}
+.lockc .bar{background:rgba(255,255,255,.25);margin:0}.lockc .bar i{background:#fff}.lockc .row{display:flex;justify-content:space-between;font-size:12px;margin-top:6px;color:#fef3c7}
 .sale{background:linear-gradient(90deg,#dc2626,#f97316);color:#fff;border-radius:16px;padding:12px 14px;margin:0 0 12px;display:flex;align-items:center;gap:10px;box-shadow:0 6px 18px rgba(220,38,38,.3)}
 .sale .tm{margin-left:auto;text-align:right}.sale .tm b{display:block;font-size:19px;font-variant-numeric:tabular-nums;white-space:nowrap}.sale .tm small{font-size:10.5px;opacity:.9}
 .sale .lt{font-weight:900;font-size:14.5px;line-height:1.15}.sale .lt small{display:block;font-weight:600;font-size:11px;opacity:.9}
@@ -312,6 +324,10 @@ const I18N = {
     ev_title:"Events", tournaments:"Tournaments", news:"News", no_events:"No tournament running right now – check back soon!", no_news:"No news yet.",
     ends_in:"Ends in {t}", starts_in:"Starts in {t}", ended:"Ended", your_rank:"Your rank", not_ranked:"Not ranked yet – {m} to join!", prizes:"Prizes",
     upcoming:"Upcoming", results:"Results", rank_short:"#{n}", admin_open:"⚙️ Admin panel", d_short:"d", h_short:"h", m_short:"m",
+    wb_title:"Welcome bonus", wb_sub:"A gift to start – bound to your first payout.", wb_s1:"🔒 The bonus is reserved for you", wb_s2:"📈 Reach <b>{t}</b> together with the bonus",
+    wb_s3:"✅ Then everything moves to your balance and gets paid out", wb_s4:"⏳ No payout until then", wb_accept:"Accept bonus", wb_decline:"No thanks – normal payouts from {m}",
+    wb_once:"Shown only once.", wb_tag:"BOUND WELCOME BONUS", wb_goal:"Reach {t} (bonus + earnings) for your first payout.", wb_of:"{a} of {t}", wb_left:"{n} to go",
+    wb_locked:"Payout locked until {t}", wb_taken:"🎁 Bonus reserved – reach {t}!",
     pshop:"Premium Shop", pshop_sub:"Paid via @CryptoBot · USDT, TON, BTC, ETH, LTC, BNB, TRX, USDC", welcome:"Welcome offer −{p} %", welcome_sub:"New players only · 1 purchase",
     welcome_end:"ends {d}", welcome_used:"✓ Welcome offer redeemed – regular prices apply.", welcome_over:"⌛ Welcome offer expired – regular prices apply.",
     guaranteed:"GUARANTEED", gp_t:"Golden Pack", gp_d:"Guaranteed a <b>golden</b> Buddy – only Gold is drawn.", ep_t:"Epic Pack", ep_d:"Guaranteed a <b>Cosmos</b> Buddy (Epic).",
@@ -366,6 +382,10 @@ const I18N = {
     ev_title:"Events", tournaments:"Turniere", news:"News", no_events:"Gerade läuft kein Turnier – schau bald wieder vorbei!", no_news:"Noch keine News.",
     ends_in:"Endet in {t}", starts_in:"Startet in {t}", ended:"Beendet", your_rank:"Dein Platz", not_ranked:"Noch nicht platziert – {m}, um mitzumachen!", prizes:"Preise",
     upcoming:"Demnächst", results:"Ergebnisse", rank_short:"#{n}", admin_open:"⚙️ Admin-Panel", d_short:"T", h_short:"Std", m_short:"Min",
+    wb_title:"Willkommensbonus", wb_sub:"Geschenkt zum Start – gebunden an deine erste Auszahlung.", wb_s1:"🔒 Der Bonus liegt gesperrt für dich bereit", wb_s2:"📈 Sammle zusammen mit dem Bonus <b>{t}</b>",
+    wb_s3:"✅ Dann wandert alles auf deine Balance und wird ausgezahlt", wb_s4:"⏳ Bis dahin keine Auszahlung", wb_accept:"Bonus annehmen", wb_decline:"Nein danke – normal ab {m} auszahlen",
+    wb_once:"Wird nur einmal angezeigt.", wb_tag:"GEBUNDENER WILLKOMMENSBONUS", wb_goal:"Erreiche {t} (Bonus + Verdienst) für deine erste Auszahlung.", wb_of:"{a} von {t}", wb_left:"noch {n}",
+    wb_locked:"Auszahlung gesperrt bis {t}", wb_taken:"🎁 Bonus reserviert – erreiche {t}!",
     pshop:"Premium-Shop", pshop_sub:"Bezahlt über @CryptoBot · USDT, TON, BTC, ETH, LTC, BNB, TRX, USDC", welcome:"Willkommens-Angebot −{p} %", welcome_sub:"Nur für neue Spieler · 1 Einkauf",
     welcome_end:"endet {d}", welcome_used:"✓ Willkommens-Angebot eingelöst – es gelten die normalen Preise.", welcome_over:"⌛ Willkommens-Angebot abgelaufen – es gelten die normalen Preise.",
     guaranteed:"GARANTIERT", gp_t:"Goldenes Pack", gp_d:"Garantiert ein <b>goldener</b> Buddy – nur Gold wird gezogen.", ep_t:"Epic-Pack", ep_d:"Garantiert ein <b>Kosmos</b>-Buddy (Epic).",
@@ -455,7 +475,7 @@ const base = id=>{ if(S&&S.econ&&S.econ.bases[id]!=null) return S.econ.bases[id]
 const daily = (id,l)=> Math.round(base(id)*mult(l)*1e6)/1e6;
 const packOdds = k=> (S&&S.econ&&S.econ.packs[k]) || PACKS[k];
 const adReward = n=> AD_D;
-const APP_VERSION = "2026-11-08.7";
+const APP_VERSION = "2026-11-08.8";
 
 /* ================================================================ Verbindung */
 const tg = window.Telegram && window.Telegram.WebApp;
@@ -679,11 +699,15 @@ const VIEWS = {
   wallet(){
     const p = Math.min(100, S.usdt/S.min_payout*100), lr = S.last_round;
     const status = {done:T("st_done"), pending:T("st_pending"), failed:T("st_failed")};
-    return `<h2>Wallet</h2><p class="sub">${T("wallet_sub")}</p>
+    const wb = S.wbonus || {}, wbHave = S.usdt + (wb.locked||0);
+    const wbCard = wb.active ? `<div class="lockc"><div class="bigi">🔒</div><div class="t">${T("wb_tag")}</div><h3 class="num">${money(wb.locked)}</h3>
+      <p>${T("wb_goal",{t:money(wb.target)})}</p><div class="bar"><i style="width:${Math.min(100,wbHave/wb.target*100)}%"></i></div>
+      <div class="row"><span>${T("wb_of",{a:money(wbHave),t:money(wb.target)})}</span><span>${T("wb_left",{n:money(Math.max(0,wb.target-wbHave))})}</span></div></div>` : "";
+    return `<h2>Wallet</h2><p class="sub">${T("wallet_sub")}</p>${wbCard}
       <div class="card"><div style="color:var(--muted);font-size:13px">${T("balance")}</div>
         <div class="bal num">${money(S.usdt)}</div>
         <div class="bar"><i style="width:${p}%"></i></div>
-        <div style="font-size:12.5px;color:var(--muted)">${!S.autopayout?T("auto_off"):S.usdt>=S.min_payout?T("paid_next"):T("payout_from",{n:money(S.min_payout)})}</div>
+        <div style="font-size:12.5px;color:var(--muted)">${wb.active?T("wb_locked",{t:money(wb.target)}):!S.autopayout?T("auto_off"):S.usdt>=S.min_payout?T("paid_next"):T("payout_from",{n:money(S.min_payout)})}</div>
         <div class="kv" style="margin-top:12px;align-items:center"><span style="color:var(--ink);font-weight:600">${T("auto_payout")}</span><button class="switch ${S.autopayout?"on":""}" data-auto aria-label="${T("auto_payout")}"></button></div>
         ${S.deposit>0?`<div class="kv"><span>${T("deposit_only")}</span><b class="num">${money(S.deposit)}</b></div>`:""}</div>
       <div class="card">
@@ -699,10 +723,22 @@ const VIEWS = {
   },
 };
 
+let wbShown = false;
+function wbPopup(){
+  const wb = S.wbonus; if(!wb || !wb.show_popup || wbShown || document.getElementById("wbDim")) return;
+  wbShown = true;
+  const d = document.createElement("div"); d.className="wb-dim"; d.id="wbDim";
+  d.innerHTML = `<div class="wb-pop"><div class="wb-gift">🎁</div><h3>${T("wb_title")}</h3><div class="wb-amt num">${money(wb.amount)}</div>
+    <p>${T("wb_sub")}</p><div class="wb-steps">${T("wb_s1")}<br>${T("wb_s2",{t:money(wb.target)})}<br>${T("wb_s3")}<br>${T("wb_s4")}</div>
+    <button class="btn acc" data-wb="1">${T("wb_accept")}</button><button class="btn no" data-wb="0">${T("wb_decline",{m:money(S.min_payout)})}</button>
+    <div class="wb-fine">${T("wb_once")}</div></div>`;
+  document.body.appendChild(d);
+}
 function render(){
   applyStatic();
   if(!S) return;
   $("view").innerHTML = VIEWS[tab]();
+  wbPopup();
   $("hDia").textContent = fmt(S.diamonds);
   $("hUsd").textContent = usd(S.usdt);
   document.querySelectorAll("nav a").forEach(a=>{
@@ -956,6 +992,11 @@ document.addEventListener("click", async e=>{
   if(d.topup){
     try{ const {url} = await server("topup",{amount:+d.topup}); tg.openTelegramLink(url); toast(T("after_pay")); setTimeout(()=>call("state").then(apply),1000); }
     catch(err){ toast(err.message); } return;
+  }
+  if(d.wb!==undefined){
+    const acc = d.wb==="1"; document.querySelectorAll("[data-wb]").forEach(b=>b.disabled=true);
+    const r = await act("wbonus",{accept:acc}); $("wbDim")?.remove();
+    if(r && acc) toast(T("wb_taken",{t:money(S.wbonus.target)})); return;
   }
   if(d.shop){
     const body = {item:d.shop}; if(d.shop==="max"){ body.char = maxPick; if(!maxPick) return; }
