@@ -10,6 +10,7 @@ import json
 import logging
 import math
 import os
+import random
 import sqlite3
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta
@@ -145,6 +146,9 @@ def init_db() -> None:
             invoice_id INTEGER PRIMARY KEY, user_id INTEGER, amount REAL, status TEXT, url TEXT, created REAL, paid REAL);
         CREATE TABLE IF NOT EXISTS diamond_buys (
             id INTEGER PRIMARY KEY, user_id INTEGER, diamonds INTEGER, from_deposit REAL, from_balance REAL, ts REAL);
+        CREATE TABLE IF NOT EXISTS shop_buys (
+            invoice_id INTEGER PRIMARY KEY, user_id INTEGER, item TEXT, target TEXT, price REAL, sale INTEGER,
+            status TEXT, url TEXT, created REAL, paid REAL, result TEXT);
         CREATE TABLE IF NOT EXISTS pass_buys (
             invoice_id INTEGER PRIMARY KEY, user_id INTEGER, price REAL, currency TEXT, days INTEGER,
             status TEXT, url TEXT, created REAL, paid REAL);
@@ -166,7 +170,8 @@ def init_db() -> None:
                           ("awake_until", "REAL NOT NULL DEFAULT 0"), ("last_settle", "REAL NOT NULL DEFAULT 0"),
                           ("coins", "REAL NOT NULL DEFAULT 0"), ("ad_rev", "REAL NOT NULL DEFAULT 0"),
                           ("dia_frac", "REAL NOT NULL DEFAULT 0"), ("skips_day", "TEXT"),
-                          ("skips_today", "INTEGER NOT NULL DEFAULT 0"), ("pass_until", "REAL NOT NULL DEFAULT 0")]:
+                          ("skips_today", "INTEGER NOT NULL DEFAULT 0"), ("pass_until", "REAL NOT NULL DEFAULT 0"),
+                          ("boost", "INTEGER NOT NULL DEFAULT 0"), ("welcome_used", "INTEGER NOT NULL DEFAULT 0")]:
             if col not in cols:   # Spalten für ältere Datenbanken nachrüsten
                 con.execute(f"ALTER TABLE users ADD COLUMN {col} {decl}")
         if "awake_until" not in cols:   # Umstellung aufs Wach-System: alle starten wach
@@ -179,6 +184,10 @@ def init_db() -> None:
                     con.execute("UPDATE kumpels SET xp=3600")
         con.execute("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated REAL, by_admin INTEGER)")
         con.execute("DELETE FROM settings WHERE key IN ('coin_share','coin_usd','brake_ratio','brake_grace_usd','brake_dia_per_min')")
+        if not con.execute("SELECT 1 FROM meta WHERE key='econ_v3'").fetchone():   # neue Kurve/Kosten: alte Panel-Werte dafür verwerfen
+            con.execute("""DELETE FROM settings WHERE key IN ('base_divisor','mult_mid_level','mult_mid','mult_max','cost_f_klassik',
+                'cost_f_frost','cost_f_lava','cost_f_gold','cost_f_kosmos','cost_block_mult','cost_high_from','cost_high_mult','xp_waits','xp_band')""")
+            con.execute("INSERT INTO meta VALUES ('econ_v3', 1)")
         load_settings(con)
         # Coins wurden entfernt: noch vorhandene Coins einmalig in $ gutschreiben (1 Coin = 0,0001 $)
         con.execute("UPDATE users SET usdt=usdt+coins*0.0001, points_total=points_total+coins*0.0001, coins=0 WHERE coins>0")
@@ -367,7 +376,7 @@ def state(con, user_id: int) -> dict:
             "id": k["char_id"], "level": lvl, "copies": k["copies"],
             "daily": game.daily_profit(k["char_id"], lvl),
             "next_daily": game.daily_profit(k["char_id"], lvl + 1) if lvl < game.MAX_LEVEL else None,
-            "level_cost": game.level_cost(k["char_id"], lvl) if lvl < game.MAX_LEVEL else None,
+            "level_cost": game.level_cost(k["char_id"], lvl, bool(u["boost"])) if lvl < game.MAX_LEVEL else None,
             "xp": min(k["xp"], need), "xp_need": need, "skip_ads": k["skip_ads"],
             "skip_videos": game.skip_videos(rest) if rest > 0 else 0,
         })
@@ -404,7 +413,8 @@ def state(con, user_id: int) -> dict:
         "econ": econ_view(),
         "jackpots": [{"char": j["char"], "usd": j["usd"]} for j in game.JACKPOTS],   # ohne Chancen
         "collected": collected(con, user_id), "collection_total": len(game.REGULAR_IDS),
-        "collection_bonus": game.COLLECTION_BONUS_USDT, "collection_bonus_paid": bool(u["collection_bonus"]),
+        "collection_bonus": game.CFG["collection_bonus_usd"], "collection_bonus_paid": bool(u["collection_bonus"]),
+        "boost": bool(u["boost"]), "shop": shop_view(con, u, t),
         "dup_refund": {k: game.refund(k) for k in game.PACKS},
         "shop_enabled": SHOP_ENABLED, "deposit": round(u["deposit"], 6), "autopayout": bool(u["autopayout"]),
         "diamonds_per_usdt": game.DIAMONDS_PER_USDT, "topup_amounts": game.TOPUP_AMOUNTS,
@@ -463,13 +473,19 @@ def act_pack(con, user_id, u, pack):
                 (user_id, pack, char, int(bool(k)), game.now()))
     if pack != "start":
         events.add(con, user_id, "packs", 1)
-    bonus = False
-    if not k and not jackpot and not u["collection_bonus"] and collected(con, user_id) >= len(game.REGULAR_IDS):
-        con.execute("UPDATE users SET collection_bonus=1, usdt=usdt+? WHERE id=?", (game.COLLECTION_BONUS_USDT, user_id))
-        bonus = True
-        log.info("SAMMEL-BONUS an Spieler %s", user_id)
+    bonus = (not k and not jackpot) and check_collection_bonus(con, user_id)
     return {"char": char, "duplicate": bool(k), "refund": back, "jackpot": bool(jackpot),
             "collection_bonus": bonus}
+
+
+def check_collection_bonus(con, user_id: int) -> bool:
+    """Zahlt den Sammel-Bonus einmalig, sobald alle normalen Buddies gesammelt sind (ohne Zeitlimit)."""
+    u = con.execute("SELECT collection_bonus FROM users WHERE id=?", (user_id,)).fetchone()
+    if u["collection_bonus"] or collected(con, user_id) < len(game.REGULAR_IDS):
+        return False
+    con.execute("UPDATE users SET collection_bonus=1, usdt=usdt+? WHERE id=?", (game.CFG["collection_bonus_usd"], user_id))
+    log.info("SAMMEL-BONUS an Spieler %s", user_id)
+    return True
 
 
 def collected(con, user_id: int) -> int:
@@ -491,7 +507,7 @@ def act_levelup(con, user_id, u, char, steps):
         if xp < need:   # XP noch nicht voll
             why = "xp_wait"
             break
-        cost = game.level_cost(char, level)
+        cost = game.level_cost(char, level, bool(u["boost"]))
         if diamonds - spent < cost:
             why = "no_diamonds"
             break
@@ -696,6 +712,178 @@ async def check_passes(user_id: int | None = None) -> int:
     return n
 
 
+# ================================================================ Premium-Shop (CryptoBot, Preise in $)
+SHOP_ITEMS = ("gold_pack", "epic_pack", "boost", "max")
+
+
+def welcome_info(u, t: float) -> dict:
+    """Willkommens-Angebot: einmal, in den ersten welcome_days Tagen ab dem Einstieg."""
+    ends = (u["created"] or t) + game.CFG["welcome_days"] * 86400
+    active = not u["welcome_used"] and t < ends and game.CFG["welcome_discount"] > 0
+    return {"active": active, "ends": ends, "used": bool(u["welcome_used"]),
+            "discount": game.CFG["welcome_discount"], "days": game.CFG["welcome_days"]}
+
+
+def item_price(item: str, target: str | None = None) -> float:
+    c = game.CFG
+    if item == "gold_pack":
+        return c["shop_gold_pack_usd"]
+    if item == "epic_pack":
+        return c["shop_epic_pack_usd"]
+    if item == "boost":
+        return c["shop_boost_usd"]
+    if item == "max":
+        return c["max_level_usd"][game.BY_ID[target]["edition"]]
+    raise E(400, "unknown_package")
+
+
+def shop_view(con, u, t: float) -> dict:
+    w = welcome_info(u, t)
+    sp = game.sale_price
+    reg = {"gold_pack": game.CFG["shop_gold_pack_usd"], "epic_pack": game.CFG["shop_epic_pack_usd"],
+           "boost": game.CFG["shop_boost_usd"]}
+    maxp = dict(game.CFG["max_level_usd"])
+    opened = con.execute("SELECT item, target, price, url FROM shop_buys WHERE user_id=? AND status='active' AND created>? ORDER BY created DESC",
+                         (u["id"], t - 3600)).fetchall()
+    return {"welcome": w, "prices": reg, "sale": {k: sp(v) for k, v in reg.items() if k != "boost"},
+            "max": maxp, "max_sale": {e: sp(v) for e, v in maxp.items()}, "boost_divisor": game.CFG["boost_divisor"],
+            "open": [dict(r) for r in opened], "enabled": bool(SHOP_ENABLED and CRYPTOPAY_TOKEN)}
+
+
+async def act_shop_buy(user_id: int, item: str, target: str | None) -> dict:
+    """Legt eine CryptoBot-Rechnung für einen Shop-Artikel an (mit Willkommens-Rabatt, falls gültig)."""
+    if not SHOP_ENABLED or not CRYPTOPAY_TOKEN:
+        raise E(400, "topup_off")
+    if item not in SHOP_ITEMS:
+        raise E(400, "unknown_package")
+    t = game.now()
+    with db() as con:
+        u = con.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+        if item == "boost" and u["boost"]:
+            raise E(400, "boost_owned")
+        if item == "max":
+            if target not in game.BY_ID or target in game.JACKPOT_USD:
+                raise E(400, "no_figure")
+            k = con.execute("SELECT level FROM kumpels WHERE user_id=? AND char_id=?", (user_id, target)).fetchone()
+            if not k:
+                raise E(400, "no_figure")
+            if k["level"] >= game.MAX_LEVEL:
+                raise E(400, "max_level")
+        else:
+            target = None
+        sale = item != "boost" and welcome_info(u, t)["active"]
+        price = item_price(item, target)
+        if sale:
+            price = game.sale_price(price)
+        old = con.execute("SELECT * FROM shop_buys WHERE user_id=? AND status='active' AND created>?", (user_id, t - 3000)).fetchall()
+    for o in old:   # gleiche offene Rechnung wiederverwenden; offene Rabatt-Rechnungen für etwas anderes stornieren (nur 1 Kauf mit Rabatt)
+        if o["item"] == item and o["target"] == target and abs(o["price"] - price) < 0.001:
+            return {"url": o["url"], "invoice_id": o["invoice_id"], "price": price, "sale": bool(o["sale"])}
+        if o["sale"] and sale:
+            try:
+                await cryptopay("deleteInvoice", {"invoice_id": o["invoice_id"]})
+            except Exception:
+                pass
+            with db() as con:
+                con.execute("UPDATE shop_buys SET status='cancelled' WHERE invoice_id=? AND status='active'", (o["invoice_id"],))
+    lang = user_lang(user_id)
+    what = tr(lang, "shop_" + item, name=game.BY_ID[target]["name"] if target else "")
+    res = await cryptopay("createInvoice", {
+        "currency_type": "fiat", "fiat": "USD", **pay_assets(), "amount": f"{price:.2f}",
+        "payload": f"shop:{user_id}", "description": f"Crypto Buddies: {what}"[:1024], "expires_in": 3600,
+        "allow_comments": False, "allow_anonymous": False})
+    if not res.get("ok"):
+        raise E(502, "cryptobot_down")
+    inv = res["result"]
+    url = inv.get("mini_app_invoice_url") or inv.get("bot_invoice_url") or inv.get("pay_url")
+    with db() as con:
+        con.execute("INSERT INTO shop_buys (invoice_id, user_id, item, target, price, sale, status, url, created) VALUES (?,?,?,?,?,?,?,?,?)",
+                    (inv["invoice_id"], user_id, item, target, price, int(sale), "active", url, t))
+    return {"url": url, "invoice_id": inv["invoice_id"], "price": price, "sale": sale}
+
+
+def give_buddy(con, user_id: int, edition: str, source: str) -> str:
+    """Gibt einen Buddy der Edition – bevorzugt einen, den der Spieler noch nicht hat."""
+    have = {r[0] for r in con.execute("SELECT char_id FROM kumpels WHERE user_id=?", (user_id,))}
+    pool = [c for c in game.BY_EDITION[edition] if c not in have] or game.BY_EDITION[edition]
+    char = random.SystemRandom().choice(pool)
+    if char in have:
+        con.execute("UPDATE kumpels SET copies=copies+1 WHERE user_id=? AND char_id=?", (user_id, char))
+    else:
+        con.execute("INSERT INTO kumpels (user_id, char_id, last_collect) VALUES (?,?,?)", (user_id, char, game.now()))
+    con.execute("INSERT INTO pulls (user_id, pack, char_id, duplicate, ts) VALUES (?,?,?,?,?)",
+                (user_id, source, char, int(char in have), game.now()))
+    return char
+
+
+def credit_shop(con, invoice_id: int) -> dict | None:
+    """Schreibt einen bezahlten Shop-Kauf genau einmal gut."""
+    row = con.execute("SELECT * FROM shop_buys WHERE invoice_id=?", (invoice_id,)).fetchone()
+    if not row or row["status"] == "paid":
+        return None
+    uid, item = row["user_id"], row["item"]
+    con.execute("UPDATE shop_buys SET status='paid', paid=? WHERE invoice_id=?", (game.now(), invoice_id))
+    settle(con, uid)
+    out = {"user_id": uid, "item": item, "price": row["price"], "sale": bool(row["sale"])}
+    if row["sale"]:
+        con.execute("UPDATE users SET welcome_used=1 WHERE id=?", (uid,))
+    if item in ("gold_pack", "epic_pack"):
+        out["char"] = give_buddy(con, uid, "gold" if item == "gold_pack" else "kosmos", item)
+        out["bonus"] = check_collection_bonus(con, uid)
+    elif item == "boost":
+        con.execute("UPDATE users SET boost=1 WHERE id=?", (uid,))
+    elif item == "max":
+        out["char"] = row["target"]
+        if con.execute("SELECT 1 FROM kumpels WHERE user_id=? AND char_id=?", (uid, row["target"])).fetchone():
+            con.execute("UPDATE kumpels SET level=?, xp=0, skip_ads=0 WHERE user_id=? AND char_id=?", (game.MAX_LEVEL, uid, row["target"]))
+        else:
+            con.execute("INSERT INTO kumpels (user_id, char_id, level, last_collect) VALUES (?,?,?,?)", (uid, row["target"], game.MAX_LEVEL, game.now()))
+    con.execute("UPDATE shop_buys SET result=? WHERE invoice_id=?", (json.dumps(out), invoice_id))
+    log.info("SHOP-KAUF %s", out)
+    return out
+
+
+async def announce_shop(out: dict):
+    uid = out["user_id"]
+    lang = user_lang(uid)
+    name = game.BY_ID[out["char"]]["name"] if out.get("char") else ""
+    try:
+        await bot.send_message(uid, tr(lang, "shop_ok_" + out["item"], name=name))
+    except Exception:
+        pass
+    for owner in sorted(ADMIN_IDS):
+        try:
+            await bot.send_message(owner, f"💰 <b>Shop-Kauf {out['price']:.2f} $</b>{' (Willkommens-Rabatt)' if out['sale'] else ''}\n"
+                                          f"{out['item']}{' · ' + html.escape(name) if name else ''}\n🆔 <code>{uid}</code>")
+        except Exception:
+            pass
+
+
+async def check_shop(user_id: int | None = None) -> int:
+    if not CRYPTOPAY_TOKEN:
+        return 0
+    with db() as con:
+        q, args = "SELECT invoice_id FROM shop_buys WHERE status='active' AND created>?", [game.now() - 2 * 3600]
+        if user_id:
+            q += " AND user_id=?"; args.append(user_id)
+        ids = [r[0] for r in con.execute(q, args)]
+    if not ids:
+        return 0
+    res = await cryptopay("getInvoices", {"invoice_ids": ",".join(map(str, ids))})
+    done = []
+    with db() as con:
+        for inv in (res.get("result") or {}).get("items", []):
+            if inv.get("status") == "paid":
+                out = credit_shop(con, inv["invoice_id"])
+                if out:
+                    done.append(out)
+            elif inv.get("status") == "expired":
+                con.execute("UPDATE shop_buys SET status='expired' WHERE invoice_id=?", (inv["invoice_id"],))
+    for out in done:
+        await announce_shop(out)
+    return len(done)
+
+
 async def check_topups(user_id: int | None = None) -> int:
     """Fragt bei CryptoBot nach, ob offene Aufladungen bezahlt wurden (zusätzlich zum Webhook)."""
     if not CRYPTOPAY_TOKEN:
@@ -746,7 +934,7 @@ async def characters_js():
     return FileResponse(BASE / "webapp" / "characters.js", media_type="application/javascript")
 
 
-APP_VERSION = "2026-11-08.6"
+APP_VERSION = "2026-11-08.7"
 
 
 @app.get("/version")
@@ -803,6 +991,11 @@ async def cryptopay_webhook(request: Request):
                 await bot.send_message(uid, tr(user_lang(uid), "pass_ok", date=datetime.fromtimestamp(until).strftime("%d.%m.%Y")))
             except Exception:
                 pass
+    if data.get("update_type") == "invoice_paid" and str(inv.get("payload", "")).startswith("shop:"):
+        with db() as con:
+            out = credit_shop(con, int(inv["invoice_id"]))
+        if out:
+            await announce_shop(out)
     if data.get("update_type") == "invoice_paid" and str(inv.get("payload", "")).startswith("topup:"):
         with db() as con:
             uid = credit_topup(con, int(inv["invoice_id"]), float(inv["amount"]))
@@ -853,7 +1046,10 @@ async def handle(action, user_id, tg_user, start_param, body):
     if action == "topup_check":
         await check_topups(user_id)
         await check_passes(user_id)
+        await check_shop(user_id)
         action = "state"
+    if action == "shop_buy":
+        return await act_shop_buy(user_id, str(body.get("item", "")), body.get("char"))
     if action == "buy_pass":
         return await act_buy_pass(user_id)
 
@@ -874,7 +1070,7 @@ async def handle(action, user_id, tg_user, start_param, body):
             result = act_pack(con, user_id, u, body.get("pack"))
             if result["collection_bonus"] and ADMIN_ID:
                 asyncio.get_running_loop().create_task(bot.send_message(
-                    ADMIN_ID, f"🏆 Sammel-Bonus ({game.COLLECTION_BONUS_USDT} USDT) an {name} ({user_id}) – alle {len(game.REGULAR_IDS)} Figuren gesammelt"))
+                    ADMIN_ID, f"🏆 Sammel-Bonus ({game.CFG['collection_bonus_usd']:g} $) an {name} ({user_id}) – alle {len(game.REGULAR_IDS)} Figuren gesammelt"))
             if result["jackpot"] and ADMIN_ID:
                 asyncio.get_running_loop().create_task(bot.send_message(
                     ADMIN_ID, f"🎰 Jackpot: {game.BY_ID[result['char']]['name']} "
@@ -994,9 +1190,11 @@ async def admin_api(action: str, request: Request, x_init_data: str | None = Hea
                 awake_n = con.execute("SELECT COUNT(*) FROM users WHERE awake_until>? OR pass_until>?", (game.now(), game.now())).fetchone()[0]
                 passes_n = con.execute("SELECT COUNT(*) FROM users WHERE pass_until>?", (game.now(),)).fetchone()[0]
                 passes_sold = con.execute("SELECT COUNT(*), COALESCE(SUM(price),0) FROM pass_buys WHERE status='paid'").fetchone()
+                shop_sold = con.execute("SELECT COUNT(*), COALESCE(SUM(price),0) FROM shop_buys WHERE status='paid'").fetchone()
             return {"defaults": game.DEFAULTS, "values": game.CFG, "changed": sorted(saved),
                     "info": {"ads_7d": ads7, "awake_now": awake_n, "passes_active": passes_n,
-                             "passes_sold": passes_sold[0], "passes_eur": round(passes_sold[1], 2)}}
+                             "passes_sold": passes_sold[0], "passes_eur": round(passes_sold[1], 2),
+                             "shop_sold": shop_sold[0], "shop_usd": round(shop_sold[1], 2)}}
         if action == "econ_set":
             owner_only()
             try:
@@ -1069,7 +1267,7 @@ async def admin_api(action: str, request: Request, x_init_data: str | None = Hea
                 ks = [dict(id=k["char_id"], level=k["level"], copies=k["copies"], daily=game.daily_profit(k["char_id"], k["level"]))
                       for k in con.execute("SELECT * FROM kumpels WHERE user_id=? ORDER BY level DESC", (uid,))]
                 prof = {k: u[k] for k in ("id", "name", "username", "diamonds", "usdt", "deposit", "usdt_paid", "points_total",
-                                          "created", "last_seen", "lang", "blocked", "collection_bonus", "pass_until")}
+                                          "created", "last_seen", "lang", "blocked", "collection_bonus", "pass_until", "boost", "welcome_used")}
                 prof["friends"] = con.execute("SELECT COUNT(*) FROM users WHERE ref_by=?", (uid,)).fetchone()[0]
                 prof["is_admin"] = is_admin(uid, con)
                 prof["log"] = [dict(r) for r in con.execute(
@@ -1093,6 +1291,12 @@ async def admin_api(action: str, request: Request, x_init_data: str | None = Hea
                 except Exception:
                     pass
             return {"ok": True, "pass_until": until}
+        if action == "user_boost":   # Level-Boost manuell an/aus
+            uid, on = int(body["id"]), int(bool(body.get("on")))
+            with db() as con:
+                con.execute("UPDATE users SET boost=? WHERE id=?", (on, uid))
+            log_action("user_boost", uid, {"on": on})
+            return {"ok": True}
         if action == "user_grant":
             uid, char = int(body["id"]), str(body["char"])
             level = max(1, min(game.MAX_LEVEL, int(body.get("level", 1))))

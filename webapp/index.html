@@ -135,6 +135,27 @@ h2{font-size:18px;font-weight:800;letter-spacing:-.2px;margin:22px 0 4px}
 .wake .row{display:flex;justify-content:space-between;font-size:12px;color:#d7dbe4}
 .wake .wbtn{margin-top:12px;background:linear-gradient(90deg,#fbbf24,#f97316);color:#1e1b4b;font-size:15px}
 .wake p{font-size:11.5px;color:#c7cbe0;margin:10px 0 0;line-height:1.45}
+.sale{background:linear-gradient(90deg,#dc2626,#f97316);color:#fff;border-radius:16px;padding:12px 14px;margin:0 0 12px;display:flex;align-items:center;gap:10px;box-shadow:0 6px 18px rgba(220,38,38,.3)}
+.sale .tm{margin-left:auto;text-align:right}.sale .tm b{display:block;font-size:19px;font-variant-numeric:tabular-nums;white-space:nowrap}.sale .tm small{font-size:10.5px;opacity:.9}
+.sale .lt{font-weight:900;font-size:14.5px;line-height:1.15}.sale .lt small{display:block;font-weight:600;font-size:11px;opacity:.9}
+.sdone{background:var(--soft);color:var(--muted);border-radius:12px;padding:9px 12px;font-size:12px;font-weight:600;margin:0 0 12px}
+.old{text-decoration:line-through;opacity:.6;font-weight:700;font-size:12px}
+.off{background:#dc2626;color:#fff;font-size:10.5px;font-weight:900;padding:2px 6px;border-radius:6px;margin-left:6px}
+.pk2{display:flex;gap:12px;align-items:center}.pbox{width:78px;height:96px;border-radius:14px;display:grid;place-items:center;font-weight:900;font-size:12px;letter-spacing:.5px;color:#fff;flex:none;position:relative;overflow:hidden;align-content:start;padding-top:8px}
+.pbox svg{width:64px;height:64px;position:absolute;bottom:4px;left:7px}
+.pbox.g{background:linear-gradient(160deg,#fde68a,#f59e0b 60%,#b45309)}.pbox.e{background:linear-gradient(160deg,#c4b5fd,#7c3aed 60%,#3b0764)}
+.ptag{display:inline-block;font-size:10.5px;font-weight:800;padding:2px 7px;border-radius:6px;margin-bottom:4px}
+.pt2{font-weight:800;font-size:15.5px}.pd2{color:var(--muted);font-size:12px;margin:2px 0 8px;line-height:1.35}
+.boostc{background:linear-gradient(140deg,#064e3b,#047857 60%,#10b981);color:#fff;border-radius:20px;padding:16px;margin-bottom:12px;position:relative;overflow:hidden}
+.boostc .big{position:absolute;right:12px;top:4px;font-size:54px;font-weight:900;opacity:.18}
+.boostc h3{margin:2px 0 6px;font-size:18px}.boostc p{margin:0 0 10px;font-size:12.5px;color:#d1fae5;line-height:1.45}
+.boostc .btn{background:#fff;color:#065f46}
+.l5{background:linear-gradient(140deg,#1e1b4b,#4c1d95);color:#fff;border-radius:20px;padding:16px;margin-bottom:12px}
+.l5 h3{margin:2px 0 4px;font-size:18px}.l5 p{margin:0 0 8px;font-size:12.5px;color:#ddd6fe}
+.l5 select{width:100%;border:0;border-radius:12px;padding:12px;font:inherit;font-weight:700;font-size:14px;color:var(--ink);background:#fff}
+.prices{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:8px 0 10px}.prices div{background:rgba(255,255,255,.1);border-radius:9px;padding:6px 2px;text-align:center;font-size:10.5px;color:#ddd6fe}
+.prices b{display:block;color:#fff;font-size:11px;white-space:nowrap;letter-spacing:-.2px}.prices s{display:block;color:#a5b4fc;font-size:9.5px}
+.l5 .btn{background:linear-gradient(90deg,#fbbf24,#f97316);color:#1e1b4b;margin-top:10px}
 .pass{background:linear-gradient(140deg,#0f172a,#312e81 55%,#7c3aed);color:#fff;border-radius:20px;padding:18px;margin:0 0 14px;position:relative;overflow:hidden}
 .pass::after{content:"♾️";position:absolute;right:-6px;top:-14px;font-size:92px;opacity:.12}
 .pass .pt{font-size:12px;font-weight:700;color:#fcd34d;letter-spacing:.6px}
@@ -291,6 +312,12 @@ const I18N = {
     ev_title:"Events", tournaments:"Tournaments", news:"News", no_events:"No tournament running right now – check back soon!", no_news:"No news yet.",
     ends_in:"Ends in {t}", starts_in:"Starts in {t}", ended:"Ended", your_rank:"Your rank", not_ranked:"Not ranked yet – {m} to join!", prizes:"Prizes",
     upcoming:"Upcoming", results:"Results", rank_short:"#{n}", admin_open:"⚙️ Admin panel", d_short:"d", h_short:"h", m_short:"m",
+    pshop:"Premium Shop", pshop_sub:"Paid via @CryptoBot · USDT, TON, BTC, ETH, LTC, BNB, TRX, USDC", welcome:"Welcome offer −{p} %", welcome_sub:"New players only · 1 purchase",
+    welcome_end:"ends {d}", welcome_used:"✓ Welcome offer redeemed – regular prices apply.", welcome_over:"⌛ Welcome offer expired – regular prices apply.",
+    guaranteed:"GUARANTEED", gp_t:"Golden Pack", gp_d:"Guaranteed a <b>golden</b> Buddy – only Gold is drawn.", ep_t:"Epic Pack", ep_d:"Guaranteed a <b>Cosmos</b> Buddy (Epic).",
+    buy_for:"Buy · {p}", boost_tag:"LEVEL BOOST · LIFETIME", boost_t:"300 % Level-Up", boost_d:"Every level costs only ⅓ of the diamonds – for all Buddies, forever. Not discounted.",
+    boost_on:"⚡ Level Boost active", max_tag:"MAX LEVEL", max_t:"Buddy to level 500", max_d:"Choose which Buddy gets levelled:", max_none:"No Buddy to level – open packs first.",
+    max_btn:"{n} → level 500 · {p}", ed_short_klassik:"Classic", pay_wait:"After paying, tap “Check payment”", coll_nolimit:"No time limit.",
     pass_tag:"COMFORT PASS", pass_title:"All Buddies always awake", pass_b1:"☀️ Awake 24/7 – no wake videos needed", pass_b2:"⚡ No XP wait – level up instantly", pass_b3:"🐾 Applies to all your Buddies, also new ones",
     pass_buy:"Buy for {p} · {d} days", pass_note:"Paid via @CryptoBot · USDT, TON, BTC, ETH, LTC, BNB, TRX, USDC", pass_active:"♾️ Comfort Pass active until {d}", pass_active_sub:"All Buddies awake, no XP wait", pass_extend:"Extend by {d} days · {p}", pass_open:"Payment open", pass_after:"After paying, tap “Check payment”",
     awake_title:"Your team is awake", awake_sub:"All Buddies are earning", sleep_title:"Your team is asleep", sleep_sub:"Sleeping Buddies earn nothing",
@@ -339,6 +366,12 @@ const I18N = {
     ev_title:"Events", tournaments:"Turniere", news:"News", no_events:"Gerade läuft kein Turnier – schau bald wieder vorbei!", no_news:"Noch keine News.",
     ends_in:"Endet in {t}", starts_in:"Startet in {t}", ended:"Beendet", your_rank:"Dein Platz", not_ranked:"Noch nicht platziert – {m}, um mitzumachen!", prizes:"Preise",
     upcoming:"Demnächst", results:"Ergebnisse", rank_short:"#{n}", admin_open:"⚙️ Admin-Panel", d_short:"T", h_short:"Std", m_short:"Min",
+    pshop:"Premium-Shop", pshop_sub:"Bezahlt über @CryptoBot · USDT, TON, BTC, ETH, LTC, BNB, TRX, USDC", welcome:"Willkommens-Angebot −{p} %", welcome_sub:"Nur für neue Spieler · 1 Einkauf",
+    welcome_end:"endet {d}", welcome_used:"✓ Willkommens-Angebot eingelöst – es gelten die normalen Preise.", welcome_over:"⌛ Willkommens-Angebot abgelaufen – es gelten die normalen Preise.",
+    guaranteed:"GARANTIERT", gp_t:"Goldenes Pack", gp_d:"Garantiert ein <b>goldener</b> Buddy – nur Gold wird gezogen.", ep_t:"Epic-Pack", ep_d:"Garantiert ein <b>Kosmos</b>-Buddy (Epic).",
+    buy_for:"Kaufen · {p}", boost_tag:"LEVEL-BOOST · LEBENSLANG", boost_t:"300 % Level-Up", boost_d:"Jedes Level kostet nur noch ⅓ der Diamanten – für alle Buddies, für immer. Ohne Rabatt.",
+    boost_on:"⚡ Level-Boost aktiv", max_tag:"MAX-LEVEL", max_t:"Buddy auf Stufe 500", max_d:"Wähle, welcher Buddy gelevelt wird:", max_none:"Kein Buddy zum Leveln – öffne zuerst Packs.",
+    max_btn:"{n} → Stufe 500 · {p}", ed_short_klassik:"Klassik", pay_wait:"Nach dem Bezahlen auf „Zahlung prüfen“ tippen", coll_nolimit:"Ohne Zeitlimit.",
     pass_tag:"KOMFORT-PASS", pass_title:"Alle Buddies immer wach", pass_b1:"☀️ Rund um die Uhr wach – keine Wach-Videos nötig", pass_b2:"⚡ Keine XP-Wartezeit – sofort leveln", pass_b3:"🐾 Gilt für alle Buddies, auch neue",
     pass_buy:"Kaufen für {p} · {d} Tage", pass_note:"Bezahlt über @CryptoBot · USDT, TON, BTC, ETH, LTC, BNB, TRX, USDC", pass_active:"♾️ Komfort-Pass aktiv bis {d}", pass_active_sub:"Alle Buddies wach, keine XP-Wartezeit", pass_extend:"Um {d} Tage verlängern · {p}", pass_open:"Zahlung offen", pass_after:"Nach dem Bezahlen auf „Zahlung prüfen“ tippen",
     awake_title:"Dein Team ist wach", awake_sub:"Alle Buddies verdienen", sleep_title:"Dein Team schläft", sleep_sub:"Schlafende Buddies verdienen nichts",
@@ -422,7 +455,7 @@ const base = id=>{ if(S&&S.econ&&S.econ.bases[id]!=null) return S.econ.bases[id]
 const daily = (id,l)=> Math.round(base(id)*mult(l)*1e6)/1e6;
 const packOdds = k=> (S&&S.econ&&S.econ.packs[k]) || PACKS[k];
 const adReward = n=> AD_D;
-const APP_VERSION = "2026-11-08.6";
+const APP_VERSION = "2026-11-08.7";
 
 /* ================================================================ Verbindung */
 const tg = window.Telegram && window.Telegram.WebApp;
@@ -684,13 +717,13 @@ function jackpotCard(){
   return `<h2>${T("jp_title")}</h2><p class="sub">${T("jp_sub")}</p>
     <div class="card jp">${JACKPOTS.map(j=>`<div class="jprow"><div class="jpart" style="${bg(j.char)}">${BY[j.char].svg}</div>
       <div style="flex:1;min-width:0"><b>${NAME(j.char)}</b><span>${owned()[j.char]?T("in_coll"):T("jackpot")}</span></div>
-      <div class="jpusd num">${money(j.usd).replace(/[.,]0+(?=\D*$)/,"")}<small>${T("per_day")}</small></div></div>`).join("")}</div>`;
+      <div class="jpusd num">${money(daily(j.char,1))}<small>${T("per_day")}</small></div></div>`).join("")}</div>`;
 }
 function bonusCard(){
   const p = S.collected/S.collection_total*100, amount = S.collection_bonus.toLocaleString(LOC());
   if(S.collection_bonus_paid) return `<div class="card bonus done"><b>${T("coll_done")}</b><span>${T("coll_done_txt",{n:amount})}</span></div>`;
   return `<div class="card bonus"><div style="display:flex;justify-content:space-between;align-items:baseline"><b>${T("coll_bonus")}</b><b class="num" style="color:#b7791f">${LANG==="de"?amount+" $":"$"+amount}</b></div>
-    <span>${T("coll_sub",{t:S.collection_total, r:S.collection_total-S.collected})}</span>
+    <span>${T("coll_sub",{t:S.collection_total, r:S.collection_total-S.collected})} ${T("coll_nolimit")}</span>
     <div class="bar" style="margin:10px 0 0"><i style="width:${p}%;background:linear-gradient(90deg,#f6c445,#d69e2e)"></i></div></div>`;
 }
 
@@ -706,10 +739,40 @@ function passCard(){
       <button class="btn ghost" data-topcheck style="margin-top:8px;background:rgba(255,255,255,.12);color:#fff">${T("check_pay")}</button>` : ""}
     <small>${T("pass_note")}</small></div>`;
 }
+const usdP = n=> LANG==="de" ? usd(n)+" $" : "$"+usd(n);
+let maxPick = null;
+function premiumShop(){
+  const sh = S.shop; if(!sh || !sh.enabled) return "";
+  const w = sh.welcome, sale = w.active, off = Math.round(w.discount*100);
+  const pr = (k)=> sale && sh.sale[k]!=null ? `<span class="old">${usdP(sh.prices[k])}</span> ${usdP(sh.sale[k])}` : usdP(sh.prices[k]);
+  const own = owned(), cand = S.kumpels.filter(k=>!JP[k.id] && k.level<MAX_LEVEL).sort((a,b)=>sh.max[BY[b.id].edition]-sh.max[BY[a.id].edition] || b.level-a.level);
+  if(!cand.find(k=>k.id===maxPick)) maxPick = cand[0] ? cand[0].id : null;
+  const mp = id=> { const e=BY[id].edition; return sale ? `<span class="old">${usdP(sh.max[e])}</span> ${usdP(sh.max_sale[e])}` : usdP(sh.max[e]); };
+  const eds = ["klassik","frost","lava","gold","kosmos"];
+  const fdate = t=> new Date(t*1000).toLocaleString(LOC(),{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+  const boxArt = e=> (REGULAR.map(id=>BY[id]).find(c=>c.edition===e)||{}).svg||"";
+  return `<h2>${T("pshop")}</h2><p class="sub">${T("pshop_sub")}</p>
+    ${sale ? `<div class="sale"><div style="font-size:26px">🎉</div><div class="lt">${T("welcome",{p:off})}<small>${T("welcome_sub")}</small></div>
+      <div class="tm"><b class="num" id="wT" data-wend="${w.ends}">${dhms(w.ends-now())}</b><small>${T("welcome_end",{d:fdate(w.ends)})}</small></div></div>`
+      : `<div class="sdone">${w.used ? T("welcome_used") : T("welcome_over")}</div>`}
+    <div class="card pk2"><div class="pbox g">GOLD${boxArt("gold")}</div><div><span class="ptag" style="background:#fef3c7;color:#b45309">${T("guaranteed")}</span>${sale?`<span class="off">−${off} %</span>`:""}
+      <div class="pt2">${T("gp_t")}</div><div class="pd2">${T("gp_d")}</div><button class="btn" data-shop="gold_pack">${T("buy_for",{p:pr("gold_pack")})}</button></div></div>
+    <div class="card pk2"><div class="pbox e">EPIC${boxArt("kosmos")}</div><div><span class="ptag" style="background:#ede9fe;color:#6d28d9">${T("guaranteed")}</span>${sale?`<span class="off">−${off} %</span>`:""}
+      <div class="pt2">${T("ep_t")}</div><div class="pd2">${T("ep_d")}</div><button class="btn" data-shop="epic_pack">${T("buy_for",{p:pr("epic_pack")})}</button></div></div>
+    <div class="boostc"><div class="big">×${fmtH(sh.boost_divisor)}</div><div style="font-size:11px;font-weight:800;letter-spacing:.6px;color:#a7f3d0">${T("boost_tag")}</div><h3>${T("boost_t")}</h3>
+      <p>${T("boost_d")}</p>${S.boost ? `<button class="btn" disabled>${T("boost_on")}</button>` : `<button class="btn" data-shop="boost">${T("buy_for",{p:usdP(sh.prices.boost)})}</button>`}</div>
+    <div class="l5"><div style="font-size:11px;font-weight:800;letter-spacing:.6px;color:#fcd34d">${T("max_tag")}${sale?` · −${off} %`:""}</div><h3>${T("max_t")}</h3>
+      <div class="prices">${eds.map(e=>`<div>${EDN(e)}${sale?`<s>${usdP(sh.max[e])}</s>`:""}<b>${usdP(sale?sh.max_sale[e]:sh.max[e])}</b></div>`).join("")}</div>
+      ${cand.length ? `<p>${T("max_d")}</p><select id="maxSel">${cand.map(k=>`<option value="${k.id}" ${k.id===maxPick?"selected":""}>${esc(NAME(k.id))} · ${EDN(BY[k.id].edition)} · ${T("level")} ${k.level}</option>`).join("")}</select>
+        <button class="btn" data-shop="max">${T("max_btn",{n:esc(NAME(maxPick)), p:mp(maxPick)})}</button>` : `<p>${T("max_none")}</p>`}</div>
+    ${sh.open.length ? `<div class="card">${sh.open.map(o=>`<div class="kv"><span>${T("open_inv",{n:usdP(o.price)})}</span><a href="${esc(o.url)}" data-tglink style="color:var(--accent);font-weight:600;text-decoration:none">${T("pay")}</a></div>`).join("")}
+      <button class="btn ghost" data-topcheck style="margin-top:8px">${T("check_pay")}</button></div>` : ""}`;
+}
+const dhms = s=>{ s=Math.max(0,Math.floor(s)); const d=Math.floor(s/86400); return (d?d+(LANG==="de"?" T ":"d "):"")+hms(s%86400); };
 function shopSection(){
   const total = S.deposit + S.usdt, P = S.diamonds_per_usdt;
   const pk = [1,5,10,25].map(u=>({d:u*P, u}));
-  return `<h2>${T("buy_title")}</h2>${passCard()}<p class="sub">${T("buy_sub",{n:P})}</p>
+  return premiumShop() + `<h2>${T("buy_title")}</h2>${passCard()}<p class="sub">${T("buy_sub",{n:P})}</p>
     <div class="card"><div class="kv"><span>${T("deposit")}</span><b class="num">${money(S.deposit)}</b></div>
       <div class="kv"><span>${T("earned_bal")}</span><b class="num">${money(S.usdt)}</b></div></div>
     <div class="shopgrid">${pk.map(x=>`<button class="shopitem" data-buydia="${x.d}" ${total+1e-9>=x.u?"":"disabled"}>
@@ -809,7 +872,7 @@ async function openPack(pack){
   if(!res){ rv.classList.remove("on"); return; }
   const c = BY[res.char], col = ED_COLOR[c.edition];
   const note = res.collection_bonus ? T("all_collected",{t:S.collection_total, n:S.collection_bonus.toLocaleString(LOC())})
-             : res.jackpot && !res.duplicate ? T("jp_hit",{n:JP[c.id].usd}) : res.duplicate ? T("dup",{n:res.refund}) : T("new_fig");
+             : res.jackpot && !res.duplicate ? T("jp_hit",{n:usd(daily(c.id,1),4)}) : res.duplicate ? T("dup",{n:res.refund}) : T("new_fig");
   rv.innerHTML = `<div style="position:relative;display:flex;flex-direction:column;align-items:center">
     <div class="rv-glow" style="background:${col}"></div>
     <div class="rv-card" id="rvc"><div class="art" style="${bg(c.id)}">${c.svg}</div><div class="m">
@@ -829,6 +892,7 @@ function tick(){
   if($("cd")) $("cd").textContent = left;
   if($("cd2")) $("cd2").textContent = left;
   if($("rp")) $("rp").textContent = money(liveRound());
+  if($("wT")){ const l = +$("wT").dataset.wend - now(); if(l<=0){ call("state").then(apply).catch(()=>{}); $("wT").removeAttribute("id"); } else $("wT").textContent = dhms(l); }
   if($("wakeLeft") && !S.pass_active){ const l = S.awake_until-now(); $("wakeLeft").textContent = hm(l); if(l<=0 && !$("wakeCard").classList.contains("sleep")) render(); }
   let reready = false;
   document.querySelectorAll("[data-xpid]").forEach(el=>{ const k = S.kumpels.find(x=>x.id===el.dataset.xpid); if(!k) return;
@@ -893,6 +957,11 @@ document.addEventListener("click", async e=>{
     try{ const {url} = await server("topup",{amount:+d.topup}); tg.openTelegramLink(url); toast(T("after_pay")); setTimeout(()=>call("state").then(apply),1000); }
     catch(err){ toast(err.message); } return;
   }
+  if(d.shop){
+    const body = {item:d.shop}; if(d.shop==="max"){ body.char = maxPick; if(!maxPick) return; }
+    try{ const {url} = await server("shop_buy", body); tg.openTelegramLink(url); toast(T("pay_wait")); setTimeout(()=>call("state").then(apply),1000); }
+    catch(err){ toast(err.message); } return;
+  }
   if("buypass" in d){
     try{ const {url} = await server("buy_pass"); tg.openTelegramLink(url); toast(T("pass_after")); setTimeout(()=>call("state").then(apply),1000); }
     catch(err){ toast(err.message); } return;
@@ -905,6 +974,7 @@ document.addEventListener("click", async e=>{
   }
 });
 $("scrim").addEventListener("click", closeSheet);
+document.addEventListener("change", e=>{ if(e.target.id==="maxSel"){ maxPick = e.target.value; render(); } });
 
 function route(){ const h=location.hash.slice(1); tab = VIEWS[h] ? h : "sammlung"; closeSheet(); render(); window.scrollTo(0,0); }
 window.addEventListener("hashchange", route);

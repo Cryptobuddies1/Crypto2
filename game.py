@@ -14,14 +14,15 @@ PERIOD_SECONDS = 4 * 60 * 60          # Auszahlungsrunde: alle 4 Stunden
 # Datenbank gespeichert und überschreiben sie – ohne neues Deployment.
 DEFAULTS = {
     "ecpm_usd": 2.48,             # Einnahmen pro 1.000 Videos in $
-    # Verdienst: Grundwert = alter Grundwert / base_divisor, Kurve bis Stufe mult_mid_level linear auf mult_mid,
-    # danach linear bis Stufe 500 auf mult_max (259,5 = 25,95 × alter Grundwert)
-    "base_divisor": 10.0,
-    "mult_mid_level": 300, "mult_mid": 10.0, "mult_max": 259.5,
-    # Level-Kosten: (2 + 0,15 × Stufe) × Faktor; Lava/Gold/Kosmos/Jackpot × cost_block_mult je 100er-Block;
-    # ab Stufe cost_high_from zusätzlich × cost_high_mult
-    "cost_f_klassik": 1.0, "cost_f_frost": 1.25, "cost_f_lava": 2.6, "cost_f_gold": 10.2, "cost_f_kosmos": 44.0,
-    "cost_block_mult": 2.0, "cost_high_from": 300, "cost_high_mult": 2.5,
+    # Verdienst: Grundwert = alter Grundwert / base_divisor, steigt gleichmäßig: bis Stufe mult_mid_level auf mult_mid,
+    # danach bis Stufe 500 auf mult_max. Standard: eine gerade Linie von 1 auf 389,25 (Stufe 500 = 25,95 × alter Grundwert)
+    "base_divisor": 15.0,
+    "mult_mid_level": 300, "mult_mid": 233.637, "mult_max": 389.25,
+    # Level-Kosten: (2 + 0,15 × Stufe) × Faktor; bis Stufe cost_easy_until × cost_easy_mult (leichter Einstieg);
+    # Lava/Gold/Kosmos/Jackpot × cost_block_mult je 100er-Block; ab Stufe cost_high_from zusätzlich × cost_high_mult
+    "cost_f_klassik": 1.0, "cost_f_frost": 1.25, "cost_f_lava": 1.5, "cost_f_gold": 2.0, "cost_f_kosmos": 2.5,
+    "cost_easy_until": 100, "cost_easy_mult": 0.5,
+    "cost_block_mult": 1.0, "cost_high_from": 300, "cost_high_mult": 1.0,
     # Packs: Preis und Chancen in Prozent
     "packs": {
         "bronze": {"price": 40,  "odds": {"klassik": 75.45, "frost": 20, "lava": 4,  "gold": 0.45, "kosmos": 0.1}},
@@ -36,12 +37,22 @@ DEFAULTS = {
     "wake_max_hours": 24,         # höchstens so viele Stunden auf Vorrat
     "start_awake_hours": 1,       # neue Spieler starten so lange wach
     # XP-Wartezeit vor jedem Level: Minuten je 10er-Stufenblock (Stufe 1–9, 10–19, … letzter Wert gilt danach)
-    "xp_band": 10, "xp_waits": [0, 1, 2, 5, 10, 15, 20, 30, 45, 60],
+    "xp_band": 10, "xp_waits": [0, 0, 1, 1, 2, 2, 3, 3, 5, 5] + [10] * 10 + [15] * 10 + [20],
     "skip_limits": [20, 40, 60],  # Restzeit bis … Min → 1 / 2 / 3 Videos zum Sofort-Füllen
     "skip_max_day": 30,           # Sofort-Füllen pro Tag
     "skip_diamonds": 2,           # 💎 pro Skip-Video
     # Komfort-Pass (Kauf über CryptoBot): alle Buddies dauerhaft wach, keine XP-Wartezeit
     "pass_price_eur": 9.99, "pass_days": 365,
+    # Premium-Shop (Kauf über CryptoBot, Preise in $) – Normalpreise
+    "shop_gold_pack_usd": 59.99,  # garantiert ein Gold-Buddy
+    "shop_epic_pack_usd": 119.99, # garantiert ein Kosmos-Buddy
+    "shop_boost_usd": 19.99,      # Level-Boost lebenslang: jedes Level kostet nur 1/boost_divisor der Diamanten
+    "boost_divisor": 3.0,
+    "max_level_usd": {"klassik": 7.99, "frost": 19.99, "lava": 119.99, "gold": 599.99, "kosmos": 1999.99},
+    # Willkommens-Angebot: neue Spieler bekommen in den ersten welcome_days Tagen einmalig Rabatt (nicht auf Boost/Pass)
+    "welcome_discount": 0.75, "welcome_days": 7,
+    # Sammel-Bonus: einmalig für alle normalen Buddies, ohne Zeitlimit
+    "collection_bonus_usd": 300.0,
     # Sonstiges
     "notify_new_users": 1,        # 1 = Besitzer (ADMIN_ID) bekommt bei jedem neuen Spieler eine Nachricht, 0 = aus
     "min_ads_24h": 0,             # alte Regel: Videos in 24 h für die Rundenauszahlung (0 = aus, das Wach-System ersetzt sie)
@@ -103,6 +114,11 @@ def clean_settings(values: dict) -> dict:
             raise ValueError(f"{k}: ungültiger Wert ({e})")
         if k == "packs":
             out[k] = check_packs(out[k])
+        if k == "max_level_usd":
+            d = out[k]
+            if set(d) - set(EDITION_USD) or any(float(v) <= 0 for v in d.values()):
+                raise ValueError("max_level_usd: nur klassik/frost/lava/gold/kosmos mit Preis > 0")
+            out[k] = {e: round(float(v), 2) for e, v in d.items()}
     return out
 
 
@@ -146,7 +162,6 @@ JACKPOTS = [
 JACKPOT_USD = {j["char"]: j["usd"] for j in JACKPOTS}
 
 # Sammel-Bonus: wer alle normalen Figuren (ohne Jackpots) besitzt, bekommt einmalig diesen Betrag gutgeschrieben
-COLLECTION_BONUS_USDT = 1000
 
 
 def refund(pack: str) -> int:
@@ -224,14 +239,25 @@ def cost_factor(char_id: str) -> float:
     return CFG["cost_f_" + BY_ID[char_id]["edition"]]
 
 
-def level_cost(char_id: str, level: int) -> int:
-    """Diamanten für den Schritt von `level` auf `level + 1`."""
-    c = math.ceil((2 + 0.15 * level) * cost_factor(char_id))
+def level_cost(char_id: str, level: int, boost: bool = False) -> int:
+    """Diamanten für den Schritt von `level` auf `level + 1` (mit Level-Boost nur ein Bruchteil)."""
+    c = (2 + 0.15 * level) * cost_factor(char_id)
+    if level <= CFG["cost_easy_until"]:
+        c *= CFG["cost_easy_mult"]
+    c = math.ceil(c)
     if char_id in JACKPOT_USD or BY_ID[char_id]["edition"] in PREMIUM_EDITIONS:
         c = math.ceil(c * CFG["cost_block_mult"] ** ((level - 1) // 100))
     if level > CFG["cost_high_from"]:
         c = math.ceil(c * CFG["cost_high_mult"])
-    return c
+    if boost and CFG["boost_divisor"] > 0:
+        c = math.ceil(c / CFG["boost_divisor"])
+    return max(1, c)
+
+
+def sale_price(usd: float) -> float:
+    """Willkommens-Preis, abgerundet auf ,99 (59,99 → 14,99)."""
+    x = usd * (1 - CFG["welcome_discount"])
+    return round(max(0.99, math.floor(x + 0.01) - 0.01), 2)
 
 
 def xp_wait(level: int) -> int:

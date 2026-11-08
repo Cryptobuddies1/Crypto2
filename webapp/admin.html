@@ -242,6 +242,7 @@ async function openUser(id){
       <div class="kv"><span>Guthaben (auszahlbar)</span><b>${usd(u.usdt)}</b></div>
       <div class="kv"><span>Einzahlung (nur Diamanten)</span><b>${usd(u.deposit)}</b></div>
       <div class="kv"><span>Ausgezahlt</span><b>${usd(u.usdt_paid)}</b></div>
+      <div class="kv"><span>Level-Boost · Willkommens-Rabatt</span><b>${u.boost?"⚡ aktiv":"–"} · ${u.welcome_used?"eingelöst":"offen"}</b></div>
       <div class="kv"><span>Komfort-Pass</span><b>${u.pass_until*1000>Date.now()?"♾️ bis "+dt(u.pass_until):"–"}</b></div>
       <div class="kv"><span>Kumpels · Freunde</span><b>${kumpels.length} · ${u.friends}</b></div>
       <div class="kv"><span>Dabei seit · zuletzt</span><b>${dt(u.created)} · ${u.last_seen?dt(u.last_seen):"–"}</b></div>
@@ -256,7 +257,8 @@ async function openUser(id){
     <div class="card"><b>Komfort-Pass</b>
       <div class="row"><div><label>Tage</label><input id="pD" type="number" min="1" value="365"></div>
         <div><label>&nbsp;</label><label class="check" style="margin-top:8px"><input type="checkbox" id="pN" checked> benachrichtigen</label></div></div>
-      <div class="row"><button class="btn" id="pAdd">Vergeben / verlängern</button><button class="btn danger" id="pDel" ${u.pass_until*1000>Date.now()?"":"disabled"}>Entfernen</button></div></div>
+      <div class="row"><button class="btn" id="pAdd">Vergeben / verlängern</button><button class="btn danger" id="pDel" ${u.pass_until*1000>Date.now()?"":"disabled"}>Entfernen</button></div>
+      <button class="btn ghost" id="bBoost">${u.boost?"Level-Boost entfernen":"Level-Boost vergeben"}</button></div>
     <div class="card"><b>Kumpel vergeben</b>
       <label>Figur</label><select id="gC">${opts}</select>
       <label>Stufe (1–500)</label><input id="gL" type="number" min="1" max="500" value="1">
@@ -273,6 +275,7 @@ async function openUser(id){
     const r = await api("user_balance", {id, field:$("bF").value, mode:$("bM").value, value:+v, notify:$("bN").checked});
     toast(`Geändert: ${num(r.old)} → ${num(r.new)}`); openUser(id);
   });
+  $("bBoost").onclick = ()=>run(async()=>{ await api("user_boost", {id, on:!u.boost}); toast(u.boost?"Boost entfernt":"Boost vergeben"); openUser(id); });
   $("pAdd").onclick = ()=>run(async()=>{ await api("user_pass", {id, days:+$("pD").value, notify:$("pN").checked}); toast("Pass vergeben"); openUser(id); });
   $("pDel").onclick = ()=>run(async()=>{ if(!await confirmBox("Komfort-Pass entfernen?")) return; await api("user_pass", {id, days:0}); toast("Pass entfernt"); openUser(id); });
   $("gSave").onclick = ()=>run(async()=>{
@@ -310,11 +313,15 @@ function confirmBox(msg){ return new Promise(res=>{ try{ if(tg && tg.showConfirm
 const ECON_GROUPS = [
   ["Einnahmen", [["ecpm_usd","eCPM in $ (Einnahmen pro 1.000 Videos)"]]],
   ["Verdienst-Kurve", [["base_divisor","Grundwert = alter Wert ÷"],["mult_mid_level","Knick-Stufe"],["mult_mid","Faktor an der Knick-Stufe"],["mult_max","Faktor auf Stufe 500"]]],
-  ["Level-Kosten (💎)", [["cost_f_klassik","Faktor Klassik"],["cost_f_frost","Faktor Frost"],["cost_f_lava","Faktor Lava"],["cost_f_gold","Faktor Gold"],["cost_f_kosmos","Faktor Kosmos (Jackpots davon abgeleitet)"],
+  ["Level-Kosten (💎)", [["cost_easy_until","Leichter Einstieg bis Stufe"],["cost_easy_mult","Kosten-Faktor im leichten Einstieg"],["cost_f_klassik","Faktor Klassik"],["cost_f_frost","Faktor Frost"],["cost_f_lava","Faktor Lava"],["cost_f_gold","Faktor Gold"],["cost_f_kosmos","Faktor Kosmos (Jackpots davon abgeleitet)"],
      ["cost_block_mult","Lava/Gold/Kosmos/Jackpot: × je 100er-Block"],["cost_high_from","Zusatz-Aufschlag ab Stufe"],["cost_high_mult","Zusatz-Aufschlag ×"]]],
   ["Packs", [["packs","Preis und Chancen in % (JSON, Summe je Pack = 100)"]]],
   ["Videos", [["ad_diamonds","💎 pro normalem Video"],["ad_cooldown","Pause zwischen Videos (Sek.)"]]],
   ["Komfort-Pass", [["pass_price_eur","Preis in €"],["pass_days","Laufzeit in Tagen"]]],
+  ["Premium-Shop ($)", [["shop_gold_pack_usd","Goldenes Pack (Normalpreis)"],["shop_epic_pack_usd","Epic-Pack (Normalpreis)"],["shop_boost_usd","Level-Boost lebenslang (ohne Rabatt)"],
+     ["boost_divisor","Level-Boost: Kosten ÷"],["max_level_usd","Stufe 500 kaufen – Normalpreis je Edition (JSON)"],
+     ["welcome_discount","Willkommens-Rabatt (0.75 = −75 %, 0 = aus)"],["welcome_days","Willkommens-Angebot gilt Tage ab Einstieg"]]],
+  ["Sammel-Bonus", [["collection_bonus_usd","Bonus in $ für alle 96 Buddies (ohne Zeitlimit)"]]],
   ["Wach-System", [["wake_hours","Std wach pro Wach-Video"],["wake_max_hours","Max. Std auf Vorrat"],["start_awake_hours","Neue Spieler starten wach (Std)"]]],
   ["XP-Wartezeit", [["xp_band","Stufen pro Block"],["xp_waits","Minuten je Block (Komma-Liste)"],["skip_limits","Sofort-Füllen: Restzeit bis … Min → 1/2/3 Videos"],["skip_max_day","Sofort-Füllen pro Tag"],["skip_diamonds","💎 pro Skip-Video"]]],
   ["Benachrichtigungen", [["notify_new_users","Neue Spieler an Besitzer melden (1 = an, 0 = aus)"]]],
@@ -329,6 +336,7 @@ async function econ(){
   $("view").innerHTML = `<div class="kpis"><div class="kpi"><span>Videos 7 Tage</span><b>${num(ECON.info.ads_7d)}</b></div>
       <div class="kpi"><span>Gerade wach</span><b>${num(ECON.info.awake_now)}</b></div>
       <div class="kpi good"><span>Komfort-Pässe aktiv</span><b>${num(ECON.info.passes_active)}</b></div>
+      <div class="kpi good"><span>Shop-Käufe</span><b>${num(ECON.info.shop_sold)} · ${(ECON.info.shop_usd||0).toLocaleString("de-AT",{minimumFractionDigits:2})} $</b></div>
       <div class="kpi"><span>Pässe verkauft</span><b>${num(ECON.info.passes_sold)} · ${(ECON.info.passes_eur||0).toLocaleString("de-AT",{minimumFractionDigits:2})} €</b></div></div>
     <p class="hint">Änderungen gelten sofort für alle Spieler, ohne neues Deployment. ${ME.owner?"Geänderte Felder sind markiert ●.":"Nur der Besitzer (ADMIN_ID) darf speichern."}</p>
     ${ECON_GROUPS.map(([g, fields])=>`<h2>${g}</h2><div class="card">${fields.map(([k,l])=>{
